@@ -87,3 +87,4 @@ Jekyll 커뮤니티 스타일 가이드([ben.balter.com/jekyll-style-guide](http
 
 - `preview_start`로 Jekyll을 띄울 때 `runtimeExecutable`이 `bundle.bat`를 직접 가리키면 Gemfile을 못 찾거나(cwd 문제) PATH에 Ruby bin이 없어 `jekyll: command not found`가 난다. `C:\workspace\Web\serve-skamo3.cmd`처럼 `cd /d`로 작업 디렉토리를 고정하고 `set PATH`로 Ruby bin을 명시적으로 주입하는 래퍼 스크립트를 거쳐야 한다.
 - winget/gem으로 새 도구를 설치한 직후에는 같은 세션의 PATH 환경변수가 갱신되지 않을 수 있음 — `[System.Environment]::GetEnvironmentVariable("Path","Machine")`로 새로 읽어와야 인식된다.
+- `git push`가 이유 없이 계속 타임아웃되면 credential.helper가 `manager`(GCM)로 설정돼 있어 GUI 팝업을 띄우며 멈춘 것일 수 있다. `gh auth setup-git`으로 gh CLI를 credential helper로 등록하면 해결됨 (이 세션에서 재현/해결함).
