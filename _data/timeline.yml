@@ -13,7 +13,7 @@
   bullets:
     - "DirectX11/C++ 기반 자체 게임엔진 개발, 4인 팀"
     - "렌더링(Shadow/Lighting), 물리(PhysX), 파티클, Lua 스크립팅 구현"
-- title: AI/3D 회사
+- title: Deepbrain AI
   period: "2023.08 - 2025.02"
   bullets:
     - "Speech STT/TTS/Chatbot을 UE와 연동"
@@ -32,7 +32,3 @@
   period: "2020.01 - 2021.10"
   bullets:
     - "C/C++ 기반 커리큘럼 (MiniRT, Pongski, ft_container 등)"
-- title: Deepbrain AI
-  period: "2019.08 - 2019.11"
-  bullets:
-    - "AI 스타트업 근무 경험"
