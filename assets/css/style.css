@@ -1,12 +1,12 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap");
 
 :root {
-  --bg: #12141F;
+  --bg: #12150E;
   --card: #1A1F18;
   --border: #262B22;
   --border-strong: #3A4030;
   --text: #EDF2E6;
-  --text-muted: #A3AC8F;
+  --text-muted: #CBD4B8;
   --accent: #00C853;
   --accent-dark: #052E14;
   --accent2: #FF5233;
