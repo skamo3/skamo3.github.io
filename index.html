@@ -52,25 +52,23 @@ title: Home
   <div class="wrap">
     <p class="section-label">TIMELINE</p>
     <h2>커리어 타임라인</h2>
-    <div class="timeline-h">
+    <div class="timeline-v">
       {% for item in site.data.timeline %}
-      {% assign band = forloop.index0 | modulo: 2 %}
-      <div class="th-item {{ item.track }} {% if band == 0 %}above{% else %}below{% endif %}" tabindex="0">
-        <div class="th-tooltip">
+      {% assign side = forloop.index0 | modulo: 2 %}
+      <div class="tv-item {{ item.track }} {% if side == 0 %}left{% else %}right{% endif %}" tabindex="0">
+        <div class="tv-dot"></div>
+        <p class="tv-period">{{ item.period }}</p>
+        <h3 class="tv-title">{{ item.title }}</h3>
+        <div class="tv-detail">
+          <span class="track-badge track-{{ item.track }}">{{ item.track | upcase }}</span>
           <ul>
             {% for b in item.bullets %}<li>{{ b }}</li>{% endfor %}
           </ul>
         </div>
-        <div class="th-head">
-          <p class="th-period">{{ item.period }}</p>
-          <h3 class="th-title">{{ item.title }}</h3>
-          <span class="track-badge track-{{ item.track }}">{{ item.track | upcase }}</span>
-        </div>
-        <div class="th-dot"></div>
       </div>
       {% endfor %}
     </div>
-    <p class="th-hint">항목에 마우스를 올리면(또는 탭하면) 세부 내용을 볼 수 있습니다</p>
+    <p class="th-hint">항목에 마우스를 올리면(또는 탭하면) 세부 내용이 펼쳐집니다</p>
   </div>
 </section>
 
@@ -137,5 +135,3 @@ title: Home
     </div>
   </div>
 </section>
-
-<script src="{{ '/assets/js/timeline.js' | relative_url }}" defer></script>
