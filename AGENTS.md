@@ -30,6 +30,7 @@ TBD — Jekyll 스캐폴딩 시 채움 (`bundle exec jekyll serve`, `bundle exec
 ## 참고 문서
 - [`docs/site-architecture.md`](docs/site-architecture.md) — 기술 결정 기록
 - [`docs/harness-engineering-notes.md`](docs/harness-engineering-notes.md) — 하네스 엔지니어링 개념 정리
+- [`docs/design-reference-badarang.md`](docs/design-reference-badarang.md) — 커스텀 디자인 레퍼런스(badarang.netlify.app 실측 분석)
 
 ## 피드백 루프 (실수 기록)
 에이전트가 같은 실수를 반복하지 않도록, 작업 중 발견된 함정/실수는 아래에 기록한다.
