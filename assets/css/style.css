@@ -123,30 +123,43 @@ a { color: inherit; text-decoration: none; }
 .skill-chip .skill-icon img { width: 18px; height: 18px; }
 .skill-chip .skill-icon i { font-size: 21px; color: var(--accent); }
 
-/* timeline (horizontal) */
+/* timeline (horizontal, zigzag) */
 .timeline-h {
-  display: flex;
-  align-items: flex-start;
-  gap: 0;
-  overflow-x: auto;
-  padding: 24px 12px;
-  scrollbar-width: thin;
-}
-.th-item {
   position: relative;
-  flex: 0 0 auto;
-  width: 180px;
-  text-align: center;
-  outline: none;
-}
-.th-head {
   display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
-  height: 150px;
-  padding-bottom: 14px;
+  margin: 150px 4px;
 }
+.timeline-h::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 0.5px;
+  background: var(--border-strong);
+}
+.th-item { position: relative; outline: none; }
+.th-dot {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  z-index: 1;
+}
+.th-item.work .th-dot { background: var(--amber); }
+.th-head {
+  position: absolute;
+  left: 50%;
+  width: 170px;
+  transform: translateX(-50%);
+  text-align: center;
+}
+.th-item.above .th-head { bottom: calc(100% + 14px); }
+.th-item.below .th-head { top: calc(100% + 14px); }
 .th-period { font-size: 15.5px; color: var(--text-muted); margin: 0 0 4px; }
 .th-title { font-size: 18px; margin: 0 0 8px; }
 .th-item .track-badge {
@@ -159,21 +172,6 @@ a { color: inherit; text-decoration: none; }
 }
 .th-item .track-edu { background: var(--accent-dark); color: var(--accent); }
 .th-item .track-work { background: var(--amber-dark); color: var(--amber); }
-.th-connector { position: relative; height: 0.5px; background: var(--border-strong); }
-.th-connector::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--accent);
-  border: 2px solid var(--bg);
-  z-index: 1;
-}
-.th-item.work .th-connector::before { background: var(--amber); }
 
 .th-tooltip {
   position: fixed;
@@ -311,4 +309,33 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 640px) {
   .hero h1 { font-size: 39px; }
   .site-nav .links { gap: 12px; }
+}
+
+/* below this width, 7 zigzag items would collide -- fall back to a vertical list */
+@media (max-width: 860px) {
+  .timeline-h {
+    flex-direction: column;
+    align-items: stretch;
+    margin: 24px 0;
+    gap: 26px;
+  }
+  .timeline-h::before {
+    left: 5px;
+    right: auto;
+    top: 0;
+    bottom: 0;
+    width: 0.5px;
+    height: auto;
+  }
+  .th-item { padding-left: 24px; }
+  .th-dot { position: absolute; top: 6px; left: -19px; }
+  .th-head {
+    position: static;
+    left: auto;
+    bottom: auto;
+    top: auto;
+    width: auto;
+    transform: none;
+    text-align: left;
+  }
 }

@@ -54,7 +54,8 @@ title: Home
     <h2>커리어 타임라인</h2>
     <div class="timeline-h">
       {% for item in site.data.timeline %}
-      <div class="th-item {{ item.track }}" tabindex="0">
+      {% assign band = forloop.index0 | modulo: 2 %}
+      <div class="th-item {{ item.track }} {% if band == 0 %}above{% else %}below{% endif %}" tabindex="0">
         <div class="th-tooltip">
           <ul>
             {% for b in item.bullets %}<li>{{ b }}</li>{% endfor %}
@@ -65,7 +66,7 @@ title: Home
           <h3 class="th-title">{{ item.title }}</h3>
           <span class="track-badge track-{{ item.track }}">{{ item.track | upcase }}</span>
         </div>
-        <div class="th-connector"></div>
+        <div class="th-dot"></div>
       </div>
       {% endfor %}
     </div>
