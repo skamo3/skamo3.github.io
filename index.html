@@ -52,18 +52,24 @@ title: Home
   <div class="wrap">
     <p class="section-label">TIMELINE</p>
     <h2>커리어 타임라인</h2>
-    <div class="timeline">
+    <div class="timeline-h">
       {% for item in site.data.timeline %}
-      <div class="timeline-item {{ item.track }}">
-        <span class="track-badge track-{{ item.track }}">{{ item.track | upcase }}</span>
-        <h3>{{ item.title }}</h3>
-        <p class="period">{{ item.period }}</p>
-        <ul>
-          {% for b in item.bullets %}<li>{{ b }}</li>{% endfor %}
-        </ul>
+      <div class="th-item {{ item.track }}" tabindex="0">
+        <div class="th-tooltip">
+          <ul>
+            {% for b in item.bullets %}<li>{{ b }}</li>{% endfor %}
+          </ul>
+        </div>
+        <div class="th-head">
+          <p class="th-period">{{ item.period }}</p>
+          <h3 class="th-title">{{ item.title }}</h3>
+          <span class="track-badge track-{{ item.track }}">{{ item.track | upcase }}</span>
+        </div>
+        <div class="th-connector"></div>
       </div>
       {% endfor %}
     </div>
+    <p class="th-hint">항목에 마우스를 올리면(또는 탭하면) 세부 내용을 볼 수 있습니다</p>
   </div>
 </section>
 
@@ -130,3 +136,5 @@ title: Home
     </div>
   </div>
 </section>
+
+<script src="{{ '/assets/js/timeline.js' | relative_url }}" defer></script>
