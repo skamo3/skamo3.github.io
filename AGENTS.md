@@ -79,6 +79,7 @@ Jekyll 커뮤니티 스타일 가이드([ben.balter.com/jekyll-style-guide](http
 - [`docs/architecture/future-threejs.md`](docs/architecture/future-threejs.md) — 향후 Three.js 고급 버전 도입 시 방향
 - [`docs/harness/harness-engineering-notes.md`](docs/harness/harness-engineering-notes.md) — 하네스 엔지니어링 개념 정리
 - [`docs/design/design-reference-badarang.md`](docs/design/design-reference-badarang.md) — 커스텀 디자인 레퍼런스(badarang.netlify.app 실측 분석)
+- [`docs/design/color-palette.md`](docs/design/color-palette.md) — 확정 컬러 팔레트(Neon Circuit, 다크/라이트) 및 결정 과정
 - [`docs/dev/local-dev.md`](docs/dev/local-dev.md) — GitHub에 올리지 않고 로컬에서 확인하는 방법
 
 ## 피드백 루프 (실수 기록)
