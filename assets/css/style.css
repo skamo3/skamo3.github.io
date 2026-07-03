@@ -104,7 +104,9 @@ a { color: inherit; text-decoration: none; }
   padding: 14px 20px;
   font-size: 18px;
   font-weight: 700;
+  transition: transform .15s ease;
 }
+.role-badge:hover { transform: scale(1.05); }
 
 /* skills */
 .skill-chips { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -118,7 +120,9 @@ a { color: inherit; text-decoration: none; }
   border: 0.5px solid var(--border-strong);
   font-size: 17px;
   color: var(--text);
+  transition: transform .15s ease;
 }
+.skill-chip:hover { transform: scale(1.05); }
 .skill-chip .skill-icon { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .skill-chip .skill-icon img { width: 18px; height: 18px; }
 .skill-chip .skill-icon i { font-size: 21px; color: var(--accent); }
@@ -220,9 +224,9 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition: border-color .15s ease;
+  transition: border-color .15s ease, transform .15s ease;
 }
-.project-card:hover { border-color: var(--border-strong); }
+.project-card:hover { border-color: var(--border-strong); transform: scale(1.03); }
 .project-card .thumb {
   width: 100%;
   aspect-ratio: 16/9;
@@ -291,33 +295,4 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 640px) {
   .hero h1 { font-size: 39px; }
   .site-nav .links { gap: 12px; }
-}
-
-/* below this width, 7 zigzag items would collide -- fall back to a vertical list */
-@media (max-width: 860px) {
-  .timeline-h {
-    flex-direction: column;
-    align-items: stretch;
-    margin: 24px 0;
-    gap: 26px;
-  }
-  .timeline-h::before {
-    left: 5px;
-    right: auto;
-    top: 0;
-    bottom: 0;
-    width: 0.5px;
-    height: auto;
-  }
-  .th-item { padding-left: 24px; }
-  .th-dot { position: absolute; top: 6px; left: -19px; }
-  .th-head {
-    position: static;
-    left: auto;
-    bottom: auto;
-    top: auto;
-    width: auto;
-    transform: none;
-    text-align: left;
-  }
 }
