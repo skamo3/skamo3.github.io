@@ -1,12 +1,30 @@
 - name: Unreal Engine
+  type: logo
   icon: unrealengine
 - name: C++
+  type: logo
   icon: cplusplus
+- name: DirectX11
+  type: icon
+  icon: ti-brand-windows
+- name: HLSL / Shader
+  type: icon
+  icon: ti-code
+- name: Ray Tracing
+  type: icon
+  icon: ti-bulb
+- name: Audio Programming
+  type: icon
+  icon: ti-wave-sine
 - name: Python
+  type: logo
   icon: python
 - name: Git
+  type: logo
   icon: git
 - name: Perforce
+  type: logo
   icon: perforce
 - name: Github
+  type: logo
   icon: github

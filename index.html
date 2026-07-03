@@ -31,14 +31,18 @@ title: Home
   <div class="wrap">
     <p class="section-label">SKILLSET</p>
     <h2>기술 스택</h2>
-    <div class="skill-icons">
+    <div class="skill-chips">
       {% for s in site.data.skills %}
-      <img src="https://cdn.simpleicons.org/{{ s.icon }}/8B949E" alt="{{ s.name }}" title="{{ s.name }}" loading="lazy">
-      {% endfor %}
-    </div>
-    <div class="skill-text-tags">
-      {% for t in site.data.skills_text %}
-      <span>{{ t }}</span>
+      <div class="skill-chip">
+        <span class="skill-icon">
+          {% if s.type == "logo" %}
+          <img src="https://cdn.simpleicons.org/{{ s.icon }}/8B949E" alt="" loading="lazy">
+          {% else %}
+          <i class="ti {{ s.icon }}" aria-hidden="true"></i>
+          {% endif %}
+        </span>
+        {{ s.name }}
+      </div>
       {% endfor %}
     </div>
   </div>
@@ -50,7 +54,8 @@ title: Home
     <h2>커리어 타임라인</h2>
     <div class="timeline">
       {% for item in site.data.timeline %}
-      <div class="timeline-item">
+      <div class="timeline-item {{ item.track }}">
+        <span class="track-badge track-{{ item.track }}">{{ item.track | upcase }}</span>
         <h3>{{ item.title }}</h3>
         <p class="period">{{ item.period }}</p>
         <ul>
