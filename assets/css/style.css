@@ -38,7 +38,7 @@ h1, h2, h3 {
 a { color: inherit; text-decoration: none; }
 
 .wrap {
-  max-width: 960px;
+  max-width: 1056px;
   margin: 0 auto;
   padding: 0 24px;
 }
@@ -232,7 +232,7 @@ a { color: inherit; text-decoration: none; }
 .site-footer { padding: 32px 0 64px; text-align: center; color: var(--text-muted); font-size: 15.5px; }
 
 /* post page */
-.post-content { max-width: 680px; margin: 0 auto; padding: 64px 24px; }
+.post-content { max-width: 748px; margin: 0 auto; padding: 64px 24px; }
 .post-content h1 { font-size: 39px; margin-bottom: 8px; }
 .post-content .meta { font-size: 15.5px; color: var(--text-muted); margin-bottom: 32px; }
 .post-content h2 { font-size: 26px; margin: 32px 0 12px; }
@@ -241,7 +241,7 @@ a { color: inherit; text-decoration: none; }
 .post-content code { font-family: var(--font-mono, monospace); font-size: 17px; }
 
 /* project detail page */
-.project-detail { max-width: 680px; margin: 0 auto; padding: 64px 24px; }
+.project-detail { max-width: 748px; margin: 0 auto; padding: 64px 24px; }
 .project-detail h1 { font-size: 36.5px; margin-bottom: 8px; }
 .project-detail .meta { font-size: 15.5px; color: var(--text-muted); margin-bottom: 24px; }
 
