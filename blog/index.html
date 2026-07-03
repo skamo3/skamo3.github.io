@@ -1,0 +1,20 @@
+---
+layout: default
+title: 블로그
+permalink: /blog/
+---
+<section class="section wrap" style="padding-top:64px;">
+  <p class="section-label">BLOG</p>
+  <h2>블로그</h2>
+  <div class="post-list">
+    {% for post in site.posts %}
+    <a class="post-item" href="{{ post.url | relative_url }}">
+      <span class="title">{{ post.title }}</span>
+      <span class="date">{{ post.date | date: "%Y.%m.%d" }}</span>
+    </a>
+    {% endfor %}
+    {% if site.posts.size == 0 %}
+    <p class="about-text">아직 작성된 글이 없습니다.</p>
+    {% endif %}
+  </div>
+</section>

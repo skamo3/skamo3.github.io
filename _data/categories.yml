@@ -1,0 +1,12 @@
+game-graphics:
+  label: 게임&그래픽
+  color: "#4FD1FF"
+ai:
+  label: 인공지능
+  color: "#B18CFF"
+embedded-cpp:
+  label: "임베디드&CPP"
+  color: "#5DCAA5"
+web:
+  label: 웹프로그래밍
+  color: "#F0997B"

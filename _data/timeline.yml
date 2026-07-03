@@ -1,0 +1,38 @@
+- title: 5minlab (tech dept)
+  period: "2025.10 - 2026.01"
+  bullets:
+    - "PMM(Private Military Manager) 프로젝트, 3D 파이프라인"
+    - "NaniteMesh, Unreal Insight를 활용한 성능 분석"
+- title: AudioTracing
+  period: "2025.06 - 2025.08"
+  bullets:
+    - "UE5.5 오디오 플러그인 개발, Fab 마켓플레이스 배포"
+    - "RTCore 기반 사운드 머티리얼/어테뉴에이션, 55ms → 9ms 최적화"
+- title: Engine-SIU (자체 게임엔진)
+  period: "2025.03 - 2025.06"
+  bullets:
+    - "DirectX11/C++ 기반 자체 게임엔진 개발, 4인 팀"
+    - "렌더링(Shadow/Lighting), 물리(PhysX), 파티클, Lua 스크립팅 구현"
+- title: AI/3D 회사
+  period: "2023.08 - 2025.02"
+  bullets:
+    - "Speech STT/TTS/Chatbot을 UE와 연동"
+    - "Web Streaming/Kiosk 성능 최적화(20fps → 50fps), UMG UI 개발"
+- title: SEA:ME Pilot Program
+  period: "2022.09 - 2023.02"
+  bullets:
+    - "임베디드/네트워크 중심 교육 프로그램"
+    - "4주 단위 팀 프로젝트 2회 수행"
+- title: Project ¡Hola!
+  period: "2022.01 - 2022.04"
+  bullets:
+    - "Smilegate Challenge Season 3, Unreal Engine 4.27"
+    - "Gameplay/Level Design, Interaction & Weapon System 담당"
+- title: 42 Seoul
+  period: "2020.01 - 2021.10"
+  bullets:
+    - "C/C++ 기반 커리큘럼 (MiniRT, Pongski, ft_container 등)"
+- title: Deepbrain AI
+  period: "2019.08 - 2019.11"
+  bullets:
+    - "AI 스타트업 근무 경험"

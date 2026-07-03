@@ -1,0 +1,45 @@
+title: 김주찬 | Game Client Developer
+description: >-
+  게임 클라이언트 개발자 김주찬의 포트폴리오 & 기술 블로그.
+  Unreal Engine, DirectX11, 그래픽스/오디오 프로그래밍 프로젝트를 소개합니다.
+url: "https://skamo3.github.io"
+baseurl: ""
+
+author:
+  name: 김주찬
+  email: joochan123123@gmail.com
+  github: skamo3
+
+lang: ko
+
+markdown: kramdown
+permalink: /blog/:year/:month/:day/:title/
+
+collections:
+  projects:
+    output: true
+    permalink: /projects/:path/
+
+defaults:
+  - scope:
+      path: ""
+      type: posts
+    values:
+      layout: post
+  - scope:
+      path: ""
+      type: projects
+    values:
+      layout: project
+
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - README.md
+  - node_modules
+  - vendor
