@@ -7,10 +7,10 @@
   --border-strong: #3A4030;
   --text: #EDF2E6;
   --text-muted: #CBD4B8;
-  --accent: #00C853;
-  --accent-dark: #052E14;
-  --accent2: #FF5233;
-  --accent2-dark: #4A1204;
+  --accent: #2EFF7C;
+  --accent-dark: #073B1E;
+  --accent2: #FFD400;
+  --accent2-dark: #332600;
 }
 
 [data-theme="light"] {
@@ -20,10 +20,10 @@
   --border-strong: #C9CDB2;
   --text: #1D2317;
   --text-muted: #666B54;
-  --accent: #0A8A44;
+  --accent: #0E9F52;
   --accent-dark: #E8FBF0;
-  --accent2: #D6431F;
-  --accent2-dark: #FFF0EA;
+  --accent2: #A67C00;
+  --accent2-dark: #FFF9E0;
 }
 
 * { box-sizing: border-box; }
