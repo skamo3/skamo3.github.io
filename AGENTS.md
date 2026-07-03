@@ -8,7 +8,7 @@
 
 ## 콘텐츠 소스 오브 트루스
 프로젝트/커리어 콘텐츠를 작성할 때는 원본 PDF를 매번 다시 파싱하지 말고 아래를 우선 참고한다:
-- [`docs/profile-source.md`](docs/profile-source.md) — 이력서/포트폴리오/Notion에서 추출한 구조화 요약 (1차 소스)
+- [`docs/content/profile-source.md`](docs/content/profile-source.md) — 이력서/포트폴리오/Notion에서 추출한 구조화 요약 (1차 소스)
 - 원본: `C:\workspace\취업준비\김주찬_이력서.pdf`, `C:\workspace\취업준비\김주찬_포트폴리오.pdf`
 - Notion: https://free-grin-2e0.notion.site/portfolio (카드 레이아웃, 썸네일 등 디자인 레퍼런스)
 
@@ -35,19 +35,29 @@ bundle exec jekyll serve   # 로컬 서버 (http://127.0.0.1:4000)
 Claude Code에서 미리보기 시: `C:\workspace\Web\.claude\launch.json`의 `jekyll-skamo3` 설정으로 `preview_start` 사용 (내부적으로 `C:\workspace\Web\serve-skamo3.cmd` 실행, PATH에 Ruby bin 경로 주입).
 
 ## 컨벤션
-- 새 프로젝트 추가: `docs/profile-source.md`에 먼저 반영 → `_projects/<slug>.md`에 front matter(type/category/period/order/summary)와 본문 작성
+- 새 프로젝트 추가: `docs/content/profile-source.md`에 먼저 반영 → `_projects/<slug>.md`에 front matter(type/category/period/order/summary)와 본문 작성
 - `type: company`(회사 재직 중 프로젝트) vs `type: personal`(개인/교육 프로그램 프로젝트)로 홈 화면에서 섹션이 분리되어 렌더링됨
 - 카테고리는 반드시 `_data/categories.yml`에 정의된 키(`game-graphics`/`ai`/`embedded-cpp`/`web`) 중 하나 사용
 - 이미지 자산: `assets/images/<project-slug>/` 하위에 저장, front matter `thumbnail`에 경로 지정 (현재 대부분 프로젝트는 썸네일 미정 상태 — "이미지 준비 중" 플레이스홀더로 표시됨)
 - 실제로 존재하지 않는 외부 링크(Github repo, Youtube 영상 등)는 URL을 지어내지 말고 "(추후 교체 예정)" 같은 플레이스홀더 문구로 남긴다
 - 커밋 메시지: 한글/영문 무관, 무엇을 왜 바꿨는지 간결하게
 
+## 작업 방식 (커밋/푸시 정책)
+매 작업마다 `git push`하면 권한 확인·네트워크 왕복·토큰 사용 측면에서 오버헤드가 누적된다. 아래 방식을 기본으로 한다:
+- **로컬 커밋은 자유롭게, 자주.** 의미 있는 작업 단위(파일 몇 개 완성 등)마다 `git commit`으로 체크포인트를 남긴다 — 로컬 커밋은 비용이 거의 없다.
+- **`git push`는 사용자가 명시적으로 요청할 때만.** 여러 커밋을 모아뒀다가 한 번에 push한다. (Claude Code 자체 안전 정책상으로도 push처럼 외부에 반영되는 작업은 매번 확인받는 게 원칙이라, 이 방식이 정책과도 맞는다.)
+- 세션이 끝나거나 눈에 보이는 결과물이 필요한 시점에 "지금까지 커밋 push해줘" 같은 요청이 오면, 쌓인 로컬 커밋을 한 번에 push한다.
+- `git log`로 push 안 된 로컬 커밋이 몇 개 쌓여있는지 언제든 확인 가능 (`git log origin/main..HEAD`).
+
 ## 참고 문서
-- [`docs/site-architecture.md`](docs/site-architecture.md) — 기술 결정 기록
-- [`docs/harness-engineering-notes.md`](docs/harness-engineering-notes.md) — 하네스 엔지니어링 개념 정리
-- [`docs/design-reference-badarang.md`](docs/design-reference-badarang.md) — 커스텀 디자인 레퍼런스(badarang.netlify.app 실측 분석)
-- [`docs/local-dev.md`](docs/local-dev.md) — GitHub에 올리지 않고 로컬에서 확인하는 방법
-- [`docs/tech-stack-alternatives.md`](docs/tech-stack-alternatives.md) — Jekyll vs React/Next.js/Astro 검토 및 결론(Jekyll 유지)
+문서는 `docs/` 하위에 카테고리별 폴더로 분리되어 있다. 전체 구조는 [`docs/README.md`](docs/README.md) 참고.
+- [`docs/architecture/site-architecture.md`](docs/architecture/site-architecture.md) — 기술 결정 기록
+- [`docs/architecture/tech-stack-alternatives.md`](docs/architecture/tech-stack-alternatives.md) — Jekyll vs React/Next.js/Astro 검토 및 결론(Jekyll 유지)
+- [`docs/architecture/future-threejs.md`](docs/architecture/future-threejs.md) — 향후 Three.js 고급 버전 도입 시 방향
+- [`docs/harness/harness-engineering-notes.md`](docs/harness/harness-engineering-notes.md) — 하네스 엔지니어링 개념 정리
+- [`docs/design/design-reference-badarang.md`](docs/design/design-reference-badarang.md) — 커스텀 디자인 레퍼런스(badarang.netlify.app 실측 분석)
+- [`docs/dev/local-dev.md`](docs/dev/local-dev.md) — GitHub에 올리지 않고 로컬에서 확인하는 방법
+- [`docs/translation/token-cost-estimate.md`](docs/translation/token-cost-estimate.md) — 한국어/영어 번역 파이프라인 도입 시 토큰 비용 예측 (아직 미적용, 판단 대기 중)
 
 ## 피드백 루프 (실수 기록)
 에이전트가 같은 실수를 반복하지 않도록, 작업 중 발견된 함정/실수는 아래에 기록한다.

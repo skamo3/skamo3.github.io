@@ -10,10 +10,10 @@
 ## 콘텐츠 구조 방향성
 Notion의 4개 카테고리를 Jekyll collection으로 매핑 예정:
 - `_projects` collection 하위에 category front matter(게임&그래픽 / 인공지능 / 임베디드&CPP / 웹프로그래밍)로 구분
-- 프로젝트 상세 데이터는 [`profile-source.md`](profile-source.md) 를 소스로 사용
+- 프로젝트 상세 데이터는 [`profile-source.md`](../content/profile-source.md) 를 소스로 사용
 
 ## 디자인 레퍼런스
-커스텀 디자인 진행 시 [`design-reference-badarang.md`](design-reference-badarang.md) (badarang.netlify.app 실측 분석: 구조/폰트/색상) 를 우선 참고한다.
+커스텀 디자인 진행 시 [`design-reference-badarang.md`](../design/design-reference-badarang.md) (badarang.netlify.app 실측 분석: 구조/폰트/색상) 를 우선 참고한다. Three.js 도입을 고려할 경우 [`future-threejs.md`](future-threejs.md) 참고.
 
 ## 미확정 사항 (다음 단계에서 결정)
 - Jekyll 테마 (후보: Minimal Mistakes / Chirpy / So Simple·TeXt / 커스텀) — AGENTS.md 및 다음 단계 대화에서 데모 비교 후 확정

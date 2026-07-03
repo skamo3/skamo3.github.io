@@ -38,7 +38,9 @@
 
 ## 이 프로젝트에 적용한 방식
 - `AGENTS.md`(루트) = 지시문서. Claude Code는 `CLAUDE.md` 외 `AGENTS.md`도 인식하므로 Codex와 동일한 컨벤션 사용 가능.
-- `docs/profile-source.md` = 지식 저장소 (콘텐츠 소스 오브 트루스)
-- `docs/site-architecture.md` = 아키텍처 제약/결정 기록
+- `docs/`를 카테고리별 폴더(`content/`, `architecture/`, `design/`, `dev/`, `harness/`, `translation/`)로 분리 = 지식 저장소를 세분화해 탐색 정확도를 높임 (자세한 구조는 [`docs/README.md`](../README.md) 참고)
+- [`docs/content/profile-source.md`](../content/profile-source.md) = 콘텐츠 소스 오브 트루스
+- [`docs/architecture/site-architecture.md`](../architecture/site-architecture.md) = 아키텍처 제약/결정 기록
+- `AGENTS.md`의 "작업 방식" 섹션 = 커밋/푸시 정책 등 워크플로우 제약
 - `AGENTS.md`의 "피드백 루프(실수 기록)" 섹션 = 피드백 루프. 앞으로 작업 중 반복되는 실수가 발견되면 이곳에 계속 추가.
 - 가비지 컬렉션은 아직 적용 대상 없음(프로젝트 초기) — 문서가 실제 코드/구조와 어긋나기 시작하면 주기적으로 정리 필요.
