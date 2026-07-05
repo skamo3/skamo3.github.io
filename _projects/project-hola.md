@@ -4,13 +4,56 @@ type: personal
 category: game-graphics
 period: "2022.01 - 2022.04"
 order: 3
-summary: "Smilegate Challenge Season 3 · UE4.27 기반 팀 프로젝트"
+summary: "Smilegate Challenge Season 3 · UE4.27 기반 퍼즐 어드벤처 팀 프로젝트"
+team: "4인 1팀 (프로그래머 3, 기획자 1)"
+stack: ["Unreal Engine 4.27", "C++", "Visual Studio", "Github", "Github LFS"]
+links:
+  - label: "Github"
+    url: ""
+  - label: "게임 플레이 영상"
+    url: ""
 ---
 
-Smilegate Challenge Season 3에서 진행한 팀 프로젝트입니다. Unreal Engine 4.27, C++ 기반으로 개발했으며 Github + LFS로 협업했습니다.
+스마일게이트 챌린지 시즌3에 참여하여 제작한 팀 프로젝트입니다. '챌린지'라는 주제에 맞게 퍼즐·전투·레벨 디자인을 모두 경험한 첫 UE 퍼즐 어드벤처 프로젝트로, 프로그래밍 약 80%·전체 기획 약 30%를 담당했습니다. 캐릭터 이동 로직/애니메이션, 상호작용 오브젝트 시스템, 근거리·원거리 무기 장착/교체 구조, 스테이지 퍼즐 로직을 만들었습니다.
 
-- Gameplay & Level Design
-- Interaction & Weapon System (Melee/Range, Socket Attach, Montage)
-- Discord + Github Issue/PR 기반 팀워크
+## Gameplay & Level Design
 
-(포트폴리오 PDF에 언급된 Youtube 영상 링크는 실제 URL로 교체 예정)
+**맵이 어두운 환경이다 보니 플레이어가 옳은 길을 찾기 어려웠습니다.**
+{: .problem}
+
+옳은 길은 더 밝고 특수 이펙트를 넣어 플레이어를 유도하고, 틀린 길은 더 어둡게 처리해 시선이 덜 가도록 배치했습니다. 이후 맵 전체가 너무 어두워지는 부작용이 생겨, 전체 밝기와 상호작용 오브젝트 발광을 다시 조정했습니다.
+{: .solution}
+
+**난이도 곡선 설계가 필요했습니다.**
+{: .problem}
+
+1-1 → 1-2 구간은 이동과 몬스터 회피 위주로, 1-3 → 1-2로 되돌아오는 구간은 무기를 획득한 상태에서 이미 지나온 길의 몬스터와 전투하도록 배치해 난이도와 플레이 스타일에 변화를 줬습니다.
+{: .solution}
+
+## Interaction & Weapon System
+
+**상호작용 오브젝트를 개별 클래스로 구현하면 공통 작업을 매번 반복해야 했습니다.**
+{: .problem}
+
+`InteractBase` 클래스를 상속하는 구조로 캐릭터 상호작용과 키 입력에 따른 기본 동작을 통합했습니다. 간단한 동작은 코드를 거치지 않고 Blueprint로도 만들 수 있게 해 빠른 구현을 지원했습니다.
+{: .solution}
+
+**다양한 형태의 무기와 근접 무기별 콤보 동작을 구현해야 했습니다.**
+{: .problem}
+
+StaticMesh의 Socket을 이용해 Attach 로직을 만들고, 무기별로 Melee/Range를 설정할 수 있는 옵션을 제공했습니다. Montage 시스템으로 장착/해제 애니메이션과 콤보 애니메이션 세팅을 지원했습니다.
+{: .solution}
+
+## Teamwork
+
+**코로나와 먼 거리로 인해 대면 미팅이 제한적이었습니다.**
+{: .problem}
+
+Discord로 정기 회의와 코어 타임 상시 접속 체계를 만들어 지연 없이 피드백을 주고받았고, Github Issue로 작업과 버그를 세세하게 트래킹했습니다.
+{: .solution}
+
+**언리얼 엔진을 처음 써보면서 2달 안에 게임을 완성해야 했습니다.**
+{: .problem}
+
+첫 주에 기본적인 엔진 사용법을 익히고 이후 필요할 때마다 정보를 찾아가며 핵심 로직부터 빠르게 구현했습니다. 각자 학습한 내용을 Discord에 기록해 서로의 학습을 공유하고 팔로우업하는 문화를 만들었습니다.
+{: .solution}
