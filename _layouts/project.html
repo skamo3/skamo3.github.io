@@ -6,5 +6,45 @@ layout: default
   <span class="cat-badge" style="background:{{ cat.color }}22; color:{{ cat.color }};">{{ cat.label }}</span>
   <h1>{{ page.title }}</h1>
   <div class="meta">{{ page.period }} · {% if page.type == "company" %}회사 프로젝트{% else %}개인 & 교육 프로젝트{% endif %}</div>
+
+  {% if page.result %}
+  <p class="result-badge">{{ page.result }}</p>
+  {% endif %}
+
+  {% if page.team or page.stack or page.links %}
+  <div class="quick-facts">
+    {% if page.team %}
+    <div class="qf-item">
+      <p class="qf-label">참여 인원</p>
+      <p class="qf-value">{{ page.team }}</p>
+    </div>
+    {% endif %}
+    {% if page.stack %}
+    <div class="qf-item">
+      <p class="qf-label">사용 기술 스택</p>
+      <div class="skill-chips">
+        {% for s in page.stack %}
+        <div class="skill-chip">{{ s }}</div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    {% if page.links %}
+    <div class="qf-item">
+      <p class="qf-label">참고 링크</p>
+      <div class="qf-links">
+        {% for l in page.links %}
+        {% if l.url != "" and l.url != nil %}
+        <a href="{{ l.url }}" target="_blank" rel="noopener">{{ l.label }}</a>
+        {% else %}
+        <span class="qf-link-pending">{{ l.label }} (추후 교체 예정)</span>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
   {{ content }}
 </article>
