@@ -7,5 +7,13 @@
 {% include nav.html %}
 {{ content }}
 {% include footer.html %}
+<div id="project-modal" class="project-modal" hidden role="dialog" aria-modal="true">
+  <div class="modal-backdrop"></div>
+  <div class="modal-panel">
+    <button type="button" class="modal-close" aria-label="닫기">&times;</button>
+    <div class="modal-body project-detail"></div>
+  </div>
+</div>
+<script src="{{ '/assets/js/project-modal.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
 </body>
 </html>

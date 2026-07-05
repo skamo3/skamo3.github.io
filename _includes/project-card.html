@@ -1,5 +1,5 @@
 {% assign cat = site.data.categories[include.p.category] %}
-<a class="project-card" href="{{ include.p.url | relative_url }}">
+<a class="project-card js-project-card" href="{{ include.p.url | relative_url }}">
   <div class="thumb">
     {% if include.p.thumbnail %}
     <img src="{{ include.p.thumbnail | relative_url }}" alt="{{ include.p.title }}">
