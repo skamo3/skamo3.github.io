@@ -424,13 +424,16 @@ body.modal-open { overflow: hidden; }
   background: var(--bg);
   border: 0.5px solid var(--border-strong);
   border-radius: 16px;
-  max-width: 780px;
+  max-width: 819px;
   width: calc(100% - 48px);
   max-height: calc(100vh - 96px);
   margin: 48px 0;
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   box-shadow: 0 24px 64px rgba(0,0,0,0.5);
 }
+.project-modal .modal-panel::-webkit-scrollbar { display: none; }
 .project-modal .modal-close {
   position: sticky;
   top: 12px;
@@ -449,6 +452,19 @@ body.modal-open { overflow: hidden; }
 }
 .project-modal .modal-close:hover { color: var(--accent); border-color: var(--accent); }
 .project-modal .modal-body.project-detail { padding: 24px 32px 48px; max-width: none; }
+.project-modal .modal-body h1 { font-size: 32.85px; }
+.project-modal .modal-body .meta { font-size: 13.95px; }
+.project-modal .modal-body .result-badge { font-size: 15.3px; }
+.project-modal .modal-body .qf-label { font-size: 13.05px; }
+.project-modal .modal-body .qf-value,
+.project-modal .modal-body .qf-links a,
+.project-modal .modal-body .qf-link-pending { font-size: 15.3px; }
+.project-modal .modal-body .quick-facts .skill-chip { font-size: 13.95px; }
+.project-modal .modal-body h2 { font-size: 24.3px; }
+.project-modal .modal-body h3 { font-size: 18.9px; }
+.project-modal .modal-body p,
+.project-modal .modal-body ul,
+.project-modal .modal-body ol { font-size: 18.9px; }
 
 @media (max-width: 640px) {
   .hero h1 { font-size: 39px; }
