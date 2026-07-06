@@ -408,6 +408,24 @@ a { color: inherit; text-decoration: none; }
   border-radius: 5px;
 }
 
+.link-cards { display: flex; flex-direction: column; gap: 12px; margin: 0 0 32px; }
+.link-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: var(--card);
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+.link-card:hover { border-color: var(--accent); transform: scale(1.02); box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
+.link-card-name { font-size: 17px; font-weight: 700; color: var(--text); margin: 0 0 4px; }
+.link-card-desc { font-size: 15px; color: var(--text-muted); margin: 0 0 8px; }
+.link-card-url { font-size: 13.5px; color: var(--text-muted); margin: 0; }
+.link-card-logo { width: 64px; height: 64px; object-fit: contain; flex-shrink: 0; border-radius: 8px; background: #fff; padding: 4px; }
+
 /* project modal */
 body.modal-open { overflow: hidden; }
 .project-modal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-start; justify-content: center; }
@@ -462,6 +480,9 @@ body.modal-open { overflow: hidden; }
 .project-modal .modal-body .quick-facts .skill-chip { font-size: 13.95px; }
 .project-modal .modal-body h2 { font-size: 24.3px; }
 .project-modal .modal-body h3 { font-size: 18.9px; }
+.project-modal .modal-body .link-card-name { font-size: 15.3px; }
+.project-modal .modal-body .link-card-desc { font-size: 13.5px; }
+.project-modal .modal-body .link-card-url { font-size: 12.15px; }
 .project-modal .modal-body p,
 .project-modal .modal-body ul,
 .project-modal .modal-body ol { font-size: 18.9px; }

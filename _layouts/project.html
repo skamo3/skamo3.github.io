@@ -46,5 +46,20 @@ layout: default
   </div>
   {% endif %}
 
+  {% if page.link_cards %}
+  <div class="link-cards">
+    {% for c in page.link_cards %}
+    <a class="link-card" href="{{ c.url }}" target="_blank" rel="noopener">
+      <div class="link-card-text">
+        <p class="link-card-name">{{ c.name }}</p>
+        {% if c.desc %}<p class="link-card-desc">{{ c.desc }}</p>{% endif %}
+        <p class="link-card-url">🔗 {{ c.url }}</p>
+      </div>
+      {% if c.logo %}<img class="link-card-logo" src="{{ c.logo | relative_url }}" alt="{{ c.name }}">{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   {{ content }}
 </article>

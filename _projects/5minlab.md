@@ -7,9 +7,11 @@ order: 1
 summary: "PMM 버전 업데이트, 3D 프린터 시뮬레이터 최적화, 태양광 샌드박스 게임 프로토타입"
 thumbnail: /assets/images/5minlab/thumbnail.png
 team: "5ml tech dept. | 인턴"
-links:
-  - label: "5minlab 홈페이지"
+link_cards:
+  - name: "5minlab"
+    desc: "The Laboratory that Makes the World Enjoyable in 5 minutes! 5minlab offers delightful experiences and a high level of immersion."
     url: "https://5minlab.com/ko/"
+    logo: /assets/images/5minlab/logo.png
 ---
 
 언리얼 엔진 기반 컨텐츠 개발을 담당했습니다.
