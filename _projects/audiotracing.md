@@ -4,6 +4,7 @@ type: personal
 category: game-graphics
 period: "2025.06 - 2025.08"
 order: 1
+thumbnail: /assets/images/audiotracing/thumbnail.png
 summary: "UE5.5 오디오 플러그인 · RTCore 기반 실시간 공간 음향, 55ms → 9ms 최적화"
 result: "AudioComponent 30개 기준 55ms → 9ms (83% 지연 개선), UE Fab 마켓플레이스 출시"
 team: "4인 1팀 (프로그래머 4인)"
