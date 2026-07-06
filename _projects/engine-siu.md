@@ -72,9 +72,22 @@ toc:
 
 어떤 때는 미리 잡아둔 설계 덕분에 작업 효율이 크게 올랐지만, 어떤 때는 그 설계 자체가 오버 엔지니어링이 되어 오히려 작업 속도를 늦추기도 하는 경험을 통해 상황에 맞는 적절한 설계가 곧 완벽한 설계임을 터득
 
+구조 자체는 잘 짜여져서 이후 주차에서는 다른 조에서도 그대로 가져다 쓸 수 있을 정도로 유지되었지만, 정작 1주차 미션 중 Math 파트를 기한 내에 끝내지 못하는 문제가 발생
+
+- **원인**: 구조 설계에 시간을 들이는 사이 Math 파트 테스트가 뒤로 밀렸기 때문
+- **회고**: 구조 설계보다도 주어진 기한 내에 기능을 제대로 구현하는 것이 더 중요하다는 것을 깨달음
+
 # W02 - Billboard & Texture Atlas, WireFrame
 
 Billboard Texture와 Texture Atlas를 구현하고, 렌더링 파이프라인을 클래스 단위로 분리해 이후 주차에서 기능을 얹기 쉬운 구조로 정리
+
+- 1주차부터 이어진 Math 로직 문제 해결: UE의 행렬 연산은 행 우선(Row-Major) 기준인데, 사용하던 수학 라이브러리의 기본값은 열 우선(Column-Major)이라 행렬 변환 연산이 꼬였던 것이 원인. 행렬 곱셈 시 Major를 행 우선으로 명시적으로 지정해 해결
+- DirectXTex, DirectXTK 라이브러리를 활용해 Texture Atlas 기능 추가
+- Billboard Texture 기능을 추가하며 그 김에 난잡해져 있던 렌더링 MVP 변환 파트 코드도 함께 정리
+
+<video controls preload="none" width="100%" style="max-width:100%; border-radius:12px;">
+  <source src="/assets/video/engine-siu/week02-demo.mp4" type="video/mp4">
+</video>
 
 # W03 - Static mesh, Multi-Viewport
 
