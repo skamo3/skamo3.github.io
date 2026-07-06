@@ -59,6 +59,13 @@ module LinkCardOg
       return nil unless res.is_a?(Net::HTTPSuccess)
 
       html = res.body
+      charset = res.type_params["charset"]
+      html = if charset
+        html.force_encoding(charset).encode("UTF-8", invalid: :replace, undef: :replace)
+      else
+        html.force_encoding("UTF-8")
+      end
+      html = html.scrub if html.respond_to?(:scrub)
       {
         "desc" => extract_meta(html, "og:description") || extract_meta(html, "description", attr: "name"),
         "image" => extract_meta(html, "og:image"),
