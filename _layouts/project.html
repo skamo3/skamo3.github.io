@@ -50,7 +50,11 @@ layout: default
         {% if c.desc %}<p class="link-card-desc">{{ c.desc }}</p>{% endif %}
         <p class="link-card-url">🔗 {{ c.url }}</p>
       </div>
-      {% if c.logo %}<img class="link-card-logo" src="{{ c.logo | relative_url }}" alt="{{ c.name }}">{% endif %}
+      {% if c.logo %}
+      <img class="link-card-logo" src="{{ c.logo | relative_url }}" alt="{{ c.name }}">
+      {% elsif c.og_image %}
+      <img class="link-card-logo" src="{{ c.og_image }}" alt="{{ c.name }}">
+      {% endif %}
     </a>
     {% endfor %}
   </div>

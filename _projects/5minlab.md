@@ -9,7 +9,6 @@ thumbnail: /assets/images/5minlab/thumbnail.png
 team: "5ml tech dept. | 인턴"
 link_cards:
   - name: "5minlab"
-    desc: "The Laboratory that Makes the World Enjoyable in 5 minutes! 5minlab offers delightful experiences and a high level of immersion."
     url: "https://5minlab.com/ko/"
     logo: /assets/images/5minlab/logo.png
 ---
