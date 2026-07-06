@@ -145,6 +145,35 @@ toc:
   - 동일 갯수 StaticMeshComponent의 Transform 이동 대비 프레임 2배 가량 향상
   - StaticMeshComponent의 Transform 이동 시에는 불안정한 프레임 드랍이 발생했지만 WPO 적용 시 안정적인 프레임으로 렌더링
 
+## Bowden Cable 구현
+
+### 구현 목적
+
+- 3D 프린터에 연결된 선을 구현하여 사실감을 더하는 것.
+
+### 접근 방법
+
+1. UE CableComponent를 이용한 구현
+2. SplineComponent, SplineMeshComponent를 이용한 케이블 메시 배치
+
+- UE CableComponent는 제공되는 게 많지만 BowdenCable에는 어울리지 않다고 판단하여 2번 방법을 채택
+- SplineComponent, SplineMeshComponent를 이용하여 케이블 메시 배치
+- 세그먼트 체인 + 물리 시뮬레이션을 이용한 유연 케이블 동역학 구현
+- Head 움직임을 따라가는 목표 Spline을 생성하고, 각 관절이 이를 따라가도록 업데이트
+- 각 관절은 중력과 스프링/댐핑 계수를 적용해 자연스러운 처짐/진동/지연 표현
+  - 미세한 차이 비교를 위해 에디터 변수로 노출하여 계수 조절을 하면서 테스트 진행
+
+### 최종 결과
+
+<div class="video-embed"><iframe src="https://www.youtube.com/embed/DTzbvACoSuU" title="Bowden Cable 초기 버전" allowfullscreen></iframe></div>
+
+- 초기에는 딱딱한 움직임으로 따라옴
+
+<div class="video-embed"><iframe src="https://www.youtube.com/embed/3meqxjwddAU" title="Bowden Cable 개선 버전" allowfullscreen></iframe></div>
+
+- 각 관절마다 중력, 댐핑 계수, 보간을 넣어 조절하여 유연하게 따라오도록 변경
+- 보는 관점에 따라 3D Printer에 더 어울리는 모습이 달라질 수 있다고 판단하여 에디터 변수로 조절하며 테스트 결과 반영
+
 # 태양광 샌드박스 게임 프로토타입
 
 - 월드 시뮬레이션에 따른 실시간 태양광 발전량 계산 기능 개발
