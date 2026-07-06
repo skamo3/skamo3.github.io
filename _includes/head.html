@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script>
 (function () {
-  if (localStorage.getItem("theme") === "light") {
+  if (localStorage.getItem("theme") !== "dark") {
     document.documentElement.setAttribute("data-theme", "light");
   }
 })();
