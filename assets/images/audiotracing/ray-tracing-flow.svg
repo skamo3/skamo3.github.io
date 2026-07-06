@@ -1,0 +1,47 @@
+<svg viewBox="0 0 760 340" xmlns="http://www.w3.org/2000/svg" font-family="'Noto Sans KR', sans-serif">
+  <rect width="760" height="340" fill="#12141F"/>
+
+  <!-- Left input boxes -->
+  <rect x="20" y="30" width="220" height="55" rx="8" fill="#1A1F18" stroke="#3A4030" stroke-width="1.5"/>
+  <text x="130" y="58" fill="#EDF2E6" font-size="13" text-anchor="middle">Top-Level Acceleration</text>
+  <text x="130" y="75" fill="#EDF2E6" font-size="13" text-anchor="middle">Structure (TLAS)</text>
+
+  <rect x="20" y="95" width="220" height="45" rx="8" fill="#1A1F18" stroke="#3A4030" stroke-width="1.5"/>
+  <text x="130" y="123" fill="#EDF2E6" font-size="13" text-anchor="middle">Lumen H/W Hit Group Data</text>
+
+  <rect x="20" y="150" width="220" height="45" rx="8" fill="#1A1F18" stroke="#3A4030" stroke-width="1.5"/>
+  <text x="130" y="178" fill="#EDF2E6" font-size="13" text-anchor="middle">RayTracing Scene Metadata</text>
+
+  <rect x="20" y="205" width="220" height="90" rx="8" fill="#1A1F18" stroke="#3A4030" stroke-width="1.5"/>
+  <rect x="34" y="219" width="90" height="30" rx="5" fill="#1D2317" stroke="#3A4030"/>
+  <text x="79" y="239" fill="#EDF2E6" font-size="12" text-anchor="middle">View</text>
+  <rect x="34" y="257" width="90" height="30" rx="5" fill="#1D2317" stroke="#3A4030"/>
+  <text x="79" y="277" fill="#EDF2E6" font-size="12" text-anchor="middle">Scene</text>
+  <text x="180" y="255" fill="#A3AC8F" font-size="12" text-anchor="middle">Uniform</text>
+  <text x="180" y="272" fill="#A3AC8F" font-size="12" text-anchor="middle">Buffer</text>
+
+  <!-- Arrow to GPU -->
+  <line x1="240" y1="165" x2="290" y2="165" stroke="#A3AC8F" stroke-width="2"/>
+  <polygon points="290,159 302,165 290,171" fill="#A3AC8F"/>
+
+  <!-- GPU box (highlighted) -->
+  <rect x="304" y="60" width="200" height="210" rx="14" fill="#1A1F18" stroke="#2EFF7C" stroke-width="2.5"/>
+  <text x="404" y="90" fill="#EDF2E6" font-size="18" font-weight="700" text-anchor="middle">GPU</text>
+  <rect x="324" y="120" width="160" height="100" rx="8" fill="#073B1E" stroke="#2EFF7C" stroke-width="1"/>
+  <text x="404" y="176" fill="#2EFF7C" font-size="16" font-weight="700" text-anchor="middle">TraceRayInline</text>
+  <text x="404" y="248" fill="#A3AC8F" font-size="13" text-anchor="middle">Compute Shader</text>
+
+  <!-- Arrow to CPU -->
+  <line x1="504" y1="165" x2="548" y2="165" stroke="#A3AC8F" stroke-width="2"/>
+  <polygon points="548,159 560,165 548,171" fill="#A3AC8F"/>
+
+  <!-- CPU box -->
+  <rect x="560" y="60" width="180" height="235" rx="12" fill="#1A1F18" stroke="#3A4030" stroke-width="1.5"/>
+  <text x="650" y="90" fill="#EDF2E6" font-size="18" font-weight="700" text-anchor="middle">CPU</text>
+  <rect x="578" y="112" width="144" height="42" rx="6" fill="#1D2317" stroke="#3A4030"/>
+  <text x="650" y="138" fill="#EDF2E6" font-size="13" text-anchor="middle">Readback Buffer</text>
+  <rect x="578" y="164" width="144" height="42" rx="6" fill="#1D2317" stroke="#3A4030"/>
+  <text x="650" y="190" fill="#EDF2E6" font-size="13" text-anchor="middle">Readback Buffer</text>
+  <rect x="578" y="216" width="144" height="42" rx="6" fill="#1D2317" stroke="#3A4030"/>
+  <text x="650" y="242" fill="#EDF2E6" font-size="13" text-anchor="middle">Readback Buffer</text>
+</svg>

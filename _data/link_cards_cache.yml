@@ -17,3 +17,58 @@ https://m.bikorea.net/news/articleView.html?idxno=39761:
   desc: 딥브레인AI(대표 장세영)는 지난 1일부터 4일간 서울 코엑스에서 열린 ‘국제인공지능대전(AI EXPO KOREA 2024)’에 참가해
     대화형 AI ‘3D 초현실 아바타’를 선보였다고 7일 밝혔다.올해로 7회째를 맞이한 국제인공지능대전은 AI 신기술과 트렌드를 살펴보고...
   image: https://www.bikorea.net/news/photo/202405/39761_26321_5057.jpg
+https://www.fab.com/listings/8334fed3-f232-4b2f-a250-25f3b150f65c:
+  desc: "Audio TracingHardware-accelerated Real-Time Ray Traced Audio Plugin. \U0001F3A7Audio
+    Tracing&amp;nbsp;is a plugin that integrates&amp;nbsp;real-time Ray Tracing technology&amp;nbsp;into
+    Unreal Engine&#39;s&amp;nbsp;Sound system&amp;nbsp;with the goal of achieving
+    more realistic&amp;nbsp;sound propagation simulation. It calculates complex acoustic
+    properties—such as the position, direction, and reflections of sound sources within
+    a real-time, changing game environment—and applies them to the listener, providing
+    a&amp;nbsp;realistic and spatial sound experience.This approach makes it possible
+    to implement realistic sound variations based solely on the world&#39;s geometry,
+    without the need to set up separate audio occlusion volumes or complex Blueprint
+    logic.You can apply Audio Tracing to existing sounds with&amp;nbsp;only minimal
+    modifications, as it is compatible with Unreal Engine&#39;s Sound Asset system,
+    including&amp;nbsp;SoundCues&amp;nbsp;and&amp;nbsp;MetaSounds.Additionally, the
+    Sound Material feature allows for detailed adjustment of the acoustic properties
+    of each surface. You can&amp;nbsp;specifically define the acoustic response of
+    each surface&amp;nbsp;by individually setting scattering coefficients, reflectivity,
+    and absorption coefficients for materials such as wood, glass, and concrete.Demo:
+    https://youtu.be/k8iX0vLIHMwDocumentation: https://teampinpoint.gitbook.io/teampinpoint-docs/Sample
+    Project: https://drive.google.com/file/d/1fPAsRaZRSeVqBIUiPTxhc7L9GEDFHkgM/view?usp=sharing
+    \   ⚠️ Notice          The assets included in this Sample Project are provided
+    for demonstration purposes only.          They must not be reused, redistributed,
+    or included in other projects (commercial or non-commercial) without proper authorization.Supported
+    Unreal Engine Versions:5.65.7 (5.7.2 or later only)Note: Please be aware that
+    5.7.0 and 5.7.1 are not supported.Contact:Email: junglepinpoint@gmail.comDiscord:
+    https://discord.gg/uD38UEph7KBest Practices for Optimal Audio AccuracyFor the
+    most accurate and stable audio transmission, we recommend ensuring a clear spatial
+    relationship between sound-affecting surfaces.A slight, intentional overlap or
+    a small gap helps our ray tracer to resolve surface ambiguity perfectly, preventing
+    potential inconsistencies and guaranteeing physically correct results in all situations.Please
+    note that the player character mesh can be affected by ray tracing.To exclude
+    the mesh from ray tracing, uncheck Visible in Ray Tracing option in the Details
+    panel &amp;gt; Rendering category.You can verify this by checking if the mesh
+    appears on the Sound Material Debug view.This can be enabled with the following
+    console command:To enable: AudioTracing.HardwareRayTracing.DebugSoundMaterial
+    1To disable: AudioTracing.HardwareRayTracing.DebugSoundMaterial 0Recommended SpecificationsA
+    DirectX 12 compatible graphics card with support for ray tracing is required.Specifications
+    used for development:CPU: Intel i7-14700GPU: NVIDIA GeForce RTX 4060Memory: 32GBGraphics
+    RAM: 8GBAvailable Console VariablesAudioTracing.SoundSpeedAudioTracing.HeadWidthAudioTracing.ShowDebugVirtualAudioAudioTracing.MinUpdateIntervalAudioTracing.HardwareRayTracingAudioTracing.HardwareRayTracing.MaxReflectionDepthAudioTracing.HardwareRayTracing.MaxTraceTimeAudioTracing.HardwareRayTracing.MaxActiveSoundSourcesAudioTracing.HardwareRayTracing.RayTracingNormalBiasAudioTracing.HardwareRayTracing.DebugSoundMaterialKnown
+    IssueIf sound does not propagate correctly in enclosed spaces, make sure that
+    the mesh supports Ray Tracing. Audio Tracing relies on the same geometry used
+    for GPU Ray Tracing, so if the mesh does not support it, Audio Tracing will not
+    function properly.Audio Tracing provides a default Attenuation Asset. Since Audio
+    Tracing builds upon Unreal Engine&#39;s native Attenuation system to perform post-processing
+    on audio, any custom attenuation effects set by the user will take precedence
+    and be applied before Audio Tracing processing.Required ModulesMetasoundSynthesisDisclaimerThis
+    product was independently developed by me(us) while participating in the Epic
+    Project, a developer-support program of the KRAFTON JUNGLE GameTech Lab. All rights,
+    title, and interest in and to the product are exclusively vested in me(us). Krafton,
+    Inc. was not involved in its development and distribution and disclaims all representations
+    and warranties, express or implied, and assumes no responsibility or liability
+    for any consequences arising from the use of this product."
+  image: https://media.fab.com/image_previews/gallery_images/c4bde90b-83ff-433a-910f-38c861da43c7/15ad83f7-abdf-43e0-8a89-9a179abc4adc.png
+https://drive.google.com/file/d/1PffxuxWd7B5OQZmcsytJrBGNyQg3ZBgA/view:
+  desc:
+  image:

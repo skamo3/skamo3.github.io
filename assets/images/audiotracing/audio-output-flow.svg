@@ -1,0 +1,44 @@
+<svg viewBox="0 0 760 340" xmlns="http://www.w3.org/2000/svg" font-family="'Noto Sans KR', sans-serif">
+  <rect width="760" height="340" fill="#12141F"/>
+
+  <!-- Box 1: World Subsystem -->
+  <rect x="24" y="60" width="180" height="220" rx="12" fill="#1A1F18" stroke="#3A4030" stroke-width="1.5"/>
+  <text x="114" y="90" fill="#EDF2E6" font-size="18" font-weight="700" text-anchor="middle">World</text>
+  <text x="114" y="112" fill="#EDF2E6" font-size="18" font-weight="700" text-anchor="middle">Subsystem</text>
+  <rect x="44" y="150" width="140" height="100" rx="8" fill="#073B1E" stroke="#2EFF7C" stroke-width="1"/>
+  <text x="114" y="190" fill="#2EFF7C" font-size="13" text-anchor="middle">재생 중인</text>
+  <text x="114" y="212" fill="#2EFF7C" font-size="13" text-anchor="middle">Active Sound</text>
+  <text x="114" y="234" fill="#2EFF7C" font-size="13" text-anchor="middle">수집</text>
+
+  <!-- Arrow 1 -->
+  <line x1="204" y1="170" x2="240" y2="170" stroke="#A3AC8F" stroke-width="2"/>
+  <polygon points="240,164 252,170 240,176" fill="#A3AC8F"/>
+
+  <!-- Box 2: Audio Tracing -->
+  <rect x="252" y="60" width="260" height="220" rx="12" fill="#1A1F18" stroke="#3A4030" stroke-width="1.5"/>
+  <text x="382" y="90" fill="#EDF2E6" font-size="18" font-weight="700" text-anchor="middle">Audio Tracing</text>
+  <rect x="270" y="150" width="105" height="100" rx="8" fill="#1D2317" stroke="#3A4030" stroke-width="1"/>
+  <text x="322" y="195" fill="#EDF2E6" font-size="14" text-anchor="middle">Ray Tracing</text>
+  <text x="322" y="232" fill="#A3AC8F" font-size="12" text-anchor="middle">(GPU)</text>
+  <rect x="385" y="150" width="112" height="100" rx="8" fill="#1D2317" stroke="#3A4030" stroke-width="1"/>
+  <text x="441" y="185" fill="#EDF2E6" font-size="13" text-anchor="middle">Ray Data to</text>
+  <text x="441" y="203" fill="#EDF2E6" font-size="13" text-anchor="middle">Sound</text>
+  <text x="441" y="221" fill="#EDF2E6" font-size="13" text-anchor="middle">Parameter</text>
+  <text x="441" y="240" fill="#A3AC8F" font-size="12" text-anchor="middle">(CPU)</text>
+
+  <!-- Arrow 2 -->
+  <line x1="512" y1="170" x2="548" y2="170" stroke="#A3AC8F" stroke-width="2"/>
+  <polygon points="548,164 560,170 548,176" fill="#A3AC8F"/>
+
+  <!-- Box 3: Audio Plugin Interface -->
+  <rect x="560" y="60" width="176" height="260" rx="12" fill="#1A1F18" stroke="#FFD400" stroke-width="1.5"/>
+  <text x="648" y="86" fill="#EDF2E6" font-size="15" font-weight="700" text-anchor="middle">Audio Plugin</text>
+  <text x="648" y="106" fill="#EDF2E6" font-size="15" font-weight="700" text-anchor="middle">Interface</text>
+  <rect x="578" y="130" width="140" height="90" rx="8" fill="#332600" stroke="#FFD400" stroke-width="1"/>
+  <text x="648" y="164" fill="#FFD400" font-size="13" text-anchor="middle">Delay &amp; Reverb</text>
+  <text x="648" y="184" fill="#FFD400" font-size="13" text-anchor="middle">from Sound</text>
+  <text x="648" y="204" fill="#FFD400" font-size="13" text-anchor="middle">Parameter</text>
+  <text x="648" y="245" fill="#A3AC8F" font-size="12" text-anchor="middle">Spatializer</text>
+  <text x="648" y="263" fill="#A3AC8F" font-size="12" text-anchor="middle">+</text>
+  <text x="648" y="281" fill="#A3AC8F" font-size="12" text-anchor="middle">Source Data Override</text>
+</svg>
