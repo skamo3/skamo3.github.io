@@ -14,11 +14,15 @@ link_cards:
   - name: "Private Military Manager"
     url: "https://store.steampowered.com/app/2564320/_/"
     inline: true
+  - name: "3D Printer Simulator"
+    url: "https://5minlab.itch.io/3d-printer-simulator"
+    desc: "3D Printer Simulator provides a virtual FDM printer whose motions mirror a physical machine. Slice any model yourself and watch every stage of the print come to life."
+    inline: true
 toc:
   - label: "PMM"
     anchor: "#pmm"
-  - label: "3D 프린터 시뮬레이터"
-    anchor: "#3d-프린터-시뮬레이터"
+  - label: "3DP (3D Printer Project)"
+    anchor: "#3dp-3d-printer-project"
   - label: "태양광 샌드박스 게임 프로토타입"
     anchor: "#태양광-샌드박스-게임-프로토타입"
 ---
@@ -58,10 +62,88 @@ toc:
 - 새로운 업데이트 버전의 컨텐츠는 준비가 되어있는 상태였고 버전 업데이트에 맞추며 PMM 새로운 버전 업데이트를 진행
 - Steam에 새로운 버전 업로드를 위한 플레이 테스트 진행. 큰 문제 없이 작동하는 것 확인 후 CTO님께 전달하여 프로젝트 마무리
 
-# 3D 프린터 시뮬레이터
+# 3DP (3D Printer Project)
 
-- 가상에서 실제와 같은 3D 프린터 모델 및 구성요소 구현
-- 실시간 NaniteMesh 생성 시 발생하는 프레임 드랍 최적화 연구 (Unreal Insight 활용)
+## 3D 프린터 시뮬레이션 프로젝트
+
+{% assign tdp_card = page.link_cards | where: "name", "3D Printer Simulator" | first %}
+{% include link-card.html name=tdp_card.name url=tdp_card.url desc=tdp_card.desc logo=tdp_card.logo og_image=tdp_card.og_image %}
+
+- 실시간 나나이트 메시 생성으로 고퀄리티 3D 프린터 시뮬레이션을 제공
+
+## 주요 업무
+
+- 3D 프린터 모델 추가
+- 나나이트 메시 생성 최적화 연구
+- Bowden Cable 구현
+
+## 3D 프린터 모델 추가
+
+<div class="video-embed"><iframe src="https://www.youtube.com/embed/B8eycFDeQKM" title="3D 프린터 모델 추가" allowfullscreen></iframe></div>
+
+- 3D 프린팅 정보 파싱은 Rust로 작성된 외부 프로그램에서 받아오는 형태로 구현
+
+### 3D 프린터 모델 일반화
+
+- 프로젝트의 모델은 기존 하나의 모델만을 위해 하드코딩
+- 3D 프린터 출력 시 Rust 코드로부터 받아온 정보를 하나의 상위클래스에서 처리하고 각기 다른 모델의 움직임을 하위 BP에서 구현하고자 클래스 일반화 진행
+
+### 추가된 모델
+
+- 기존 BedSlinger를 추가로 CoreXY, Delta, Positron3D 추가
+  - 영상 순서대로 BedSlinger → CoreXY → Delta → Positron3D
+- BedSlinger, CoreXY, Positron3D 모델은 Head의 움직임에 따라 Gantry와 Bed의 움직임을 연동해주는 것으로 구현
+- Delta 모델은 Head 움직임에 따라 3개의 Arm이 연동되어 움직여야 하는 구조.
+  - Delta3D 프린터는 IK(Inverse Kinematics) 구현. Head 움직임에 맞춰서 연결된 3개 Arm의 높낮이가 함께 움직임.
+
+<div class="video-embed"><iframe src="https://www.youtube.com/embed/hCycCSOMH-g" title="Delta Mesh Editor" allowfullscreen></iframe></div>
+
+- 초기 Arm 움직임에 대한 지식이 부족해 높낮이가 자유자재로 움직이거나 이상한 방향으로 튀는 현상이 생겼었고, Delta3D 모델에 적용된 역기구학을 찾아보고 적용함으로 해결
+
+## 나나이트 메시 생성 최적화 연구
+
+### 문제 파악
+
+- 3D 프린팅 시뮬레이션이 지속될수록 프레임이 떨어지는 현상
+- Unreal Insights를 이용해 병목이 생기는 지점 파악
+
+### 원인
+
+- 생성된 NaniteMesh는 프린터가 움직임에 따라 Transform이 함께 움직임
+- 이 때 실시간으로 생성된 NaniteMesh가 쌓이고 이 Mesh들을 한번에 움직일 때 Transform Movement 병목이 생김.
+
+### 문제 해결 방법 연구
+
+- 실시간으로 생성된 NaniteMesh 묶음을 하나로 통합하는 과정 추가.
+- WPO를 이용해 실제 Mesh가 아닌 눈속임수로 효과를 주어 이동하듯이 보여주기
+
+→ CTO 님과의 상의 끝에 WPO 방식을 연구해 봄
+
+### 연구 결과
+
+- 최종적으로 WPO 적용은 불가능으로 판별
+- 프레임 개선은 이룰 수 있었지만 WPO의 경우 실제 Mesh가 이동하는 것은 아니기에 BoundBox 이동이 병행되지 않음 → 그림자와 빛 계산이 꼬이면서 부자연스럽게 나오는 현상이 발생하여 최종적으로 적용은 못함. ⇒ 자세한 내용은 아래 WPO 최적화 연구 작업
+
+### WPO 최적화 연구 작업
+
+<div class="video-embed"><iframe src="https://www.youtube.com/embed/rTNPnsBE_vg" title="WPO Test BedSlinger" allowfullscreen></iframe></div>
+
+- WPO 적용한 결과물
+  - 개선점
+    - 동일 파일 출력 시 기존에는 프레임 변동이 잦고 대략 15fps 정도로 버벅임
+    - 안정적인 게임 프레임 확보
+  - 문제점
+    - BoundBox는 움직이지 않고 Material만 움직이는 형태이기 때문에 빛, 그림자 연산 적용이 꼬이고 BoundBox가 다른 물체에 가려지면 물체도 가려진 것으로 판별되어 사라짐
+    - WPO는 큰 움직임을 위한 개념이 아니기 때문에 부적절한 것으로 판단되어 진행 중단
+  - 스트레스 테스트
+
+<div class="video-embed"><iframe src="https://www.youtube.com/embed/q2DZSRa0ULI" title="14x14 Stress Test" allowfullscreen></iframe></div>
+
+<div class="video-embed"><iframe src="https://www.youtube.com/embed/J9DXrRbAQ0E" title="30x30 Stress Test" allowfullscreen></iframe></div>
+
+- 14x14, 30x30 개의 StaticMeshComponent WPO 적용 테스트 영상
+  - 동일 갯수 StaticMeshComponent의 Transform 이동 대비 프레임 2배 가량 향상
+  - StaticMeshComponent의 Transform 이동 시에는 불안정한 프레임 드랍이 발생했지만 WPO 적용 시 안정적인 프레임으로 렌더링
 
 # 태양광 샌드박스 게임 프로토타입
 
