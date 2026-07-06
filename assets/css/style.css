@@ -338,7 +338,15 @@ a { color: inherit; text-decoration: none; }
 /* project detail page */
 .project-detail { max-width: 748px; margin: 0 auto; padding: 64px 24px; }
 .project-detail h1 { font-size: 36.5px; margin-bottom: 8px; }
-.project-detail .meta { font-size: 15.5px; color: var(--text-muted); margin-bottom: 24px; }
+.project-detail .meta { font-size: 15.5px; color: var(--text-muted); margin-bottom: 8px; }
+.project-detail .role-line { font-size: 17px; color: var(--text); margin: 0 0 24px; }
+.project-detail .role-line .role-label {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: .04em;
+  margin-right: 8px;
+}
 
 .project-detail .result-badge {
   display: inline-block;
@@ -368,7 +376,6 @@ a { color: inherit; text-decoration: none; }
   letter-spacing: .04em;
   margin: 0 0 6px;
 }
-.project-detail .qf-value { font-size: 17px; margin: 0; }
 .project-detail .qf-links { display: flex; gap: 16px; flex-wrap: wrap; }
 .project-detail .qf-links a { font-size: 17px; color: var(--accent); }
 .project-detail .qf-links a:hover { text-decoration: underline; }
@@ -472,9 +479,10 @@ body.modal-open { overflow: hidden; }
 .project-modal .modal-body.project-detail { padding: 24px 32px 48px; max-width: none; }
 .project-modal .modal-body h1 { font-size: 32.85px; }
 .project-modal .modal-body .meta { font-size: 13.95px; }
+.project-modal .modal-body .role-line { font-size: 15.3px; }
+.project-modal .modal-body .role-line .role-label { font-size: 13.05px; }
 .project-modal .modal-body .result-badge { font-size: 15.3px; }
 .project-modal .modal-body .qf-label { font-size: 13.05px; }
-.project-modal .modal-body .qf-value,
 .project-modal .modal-body .qf-links a,
 .project-modal .modal-body .qf-link-pending { font-size: 15.3px; }
 .project-modal .modal-body .quick-facts .skill-chip { font-size: 13.95px; }

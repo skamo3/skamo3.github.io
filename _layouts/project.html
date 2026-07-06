@@ -5,20 +5,15 @@ layout: default
   {% assign cat = site.data.categories[page.category] %}
   <span class="cat-badge" style="background:{{ cat.color }}22; color:{{ cat.color }};">{{ cat.label }}</span>
   <h1>{{ page.title }}</h1>
-  <div class="meta">{{ page.period }} · {% if page.type == "company" %}회사 프로젝트{% else %}개인 & 교육 프로젝트{% endif %}</div>
+  <div class="meta">{{ page.period }}</div>
+  {% if page.team %}<p class="role-line"><span class="role-label">Role</span>{{ page.team }}</p>{% endif %}
 
   {% if page.result %}
   <p class="result-badge">{{ page.result }}</p>
   {% endif %}
 
-  {% if page.team or page.stack or page.links %}
+  {% if page.stack or page.links %}
   <div class="quick-facts">
-    {% if page.team %}
-    <div class="qf-item">
-      <p class="qf-label">참여 인원</p>
-      <p class="qf-value">{{ page.team }}</p>
-    </div>
-    {% endif %}
     {% if page.stack %}
     <div class="qf-item">
       <p class="qf-label">사용 기술 스택</p>
