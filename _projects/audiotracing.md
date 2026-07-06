@@ -6,7 +6,6 @@ period: "2025.06 - 2025.08"
 order: 1
 thumbnail: /assets/images/audiotracing/thumbnail.png
 summary: "UE5.5 오디오 플러그인 · RTCore 기반 실시간 공간 음향, 55ms → 9ms 최적화"
-result: "AudioComponent 30개 기준 55ms → 9ms (83% 지연 개선), UE Fab 마켓플레이스 출시"
 team: "4인 1팀 (프로그래머 4인)"
 stack: ["Unreal Engine 5.5", "UE C++", "UE Shader (usf)", "Perforce"]
 link_cards:
@@ -107,7 +106,7 @@ Parameter화 과정 자체는 필수이고, Sound 특성 상 1~2프레임 지연
 **스레드 분리 후** — Worker Thread 분리 이후 `Parameterizing` 비용이 크게 줄어든 모습
 ![스레드 분리 후 프로파일러 — Worker Thread 분리 후 Parameterizing 항목의 Cycle Counter가 크게 감소](/assets/images/audiotracing/thread-after.png)
 
-AudioComponent 30개 기준 <span class="stat">55ms → 9ms</span>(83%)까지 개선
+<p class="result-badge">AudioComponent 30개 기준 <span class="stat">55ms → 9ms</span>(83% 지연 개선)</p>
 
 # SoundMaterial
 
