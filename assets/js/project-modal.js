@@ -34,6 +34,7 @@
         var detail = doc.querySelector(".project-detail");
         if (!detail) throw new Error("no .project-detail in response");
         body.innerHTML = detail.innerHTML;
+        if (window.applyProjectSectionIndent) window.applyProjectSectionIndent(body);
         history.pushState({ projectModal: true }, "", url);
         showModal();
       })
