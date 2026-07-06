@@ -1,0 +1,32 @@
+<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg" font-family="'Poppins','Noto Sans KR',sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#12141F"/>
+      <stop offset="100%" stop-color="#1A1F18"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="450" fill="url(#bg)"/>
+
+  <!-- wireframe cube icon, right side -->
+  <g stroke="#2EFF7C" stroke-width="2.5" fill="none" opacity="0.9">
+    <polygon points="560,150 660,120 760,150 760,260 660,290 560,260" />
+    <polygon points="560,150 660,180 660,290" />
+    <polygon points="660,180 760,150" />
+    <line x1="660" y1="180" x2="660" y2="120" />
+  </g>
+  <g stroke="#FFD400" stroke-width="1.5" fill="none" opacity="0.55">
+    <line x1="560" y1="150" x2="660" y2="180" />
+    <line x1="760" y1="150" x2="660" y2="180" />
+  </g>
+
+  <text x="60" y="195" fill="#EDF2E6" font-size="56" font-weight="900">Engine-SIU</text>
+  <text x="60" y="240" fill="#A3AC8F" font-size="24" font-weight="500">DirectX11 자체 게임엔진</text>
+
+  <line x1="60" y1="270" x2="220" y2="270" stroke="#2EFF7C" stroke-width="3"/>
+
+  <text x="60" y="320" fill="#EDF2E6" font-size="19" font-weight="700">13 Weeks</text>
+  <text x="60" y="348" fill="#A3AC8F" font-size="16">31명 로테이션 협업</text>
+
+  <text x="220" y="320" fill="#EDF2E6" font-size="19" font-weight="700">From Scratch</text>
+  <text x="220" y="348" fill="#A3AC8F" font-size="16">렌더러 · 물리 · 스크립트</text>
+</svg>

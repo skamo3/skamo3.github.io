@@ -4,6 +4,7 @@ type: personal
 category: game-graphics
 period: "2025.03 - 2025.06"
 order: 2
+thumbnail: /assets/images/engine-siu/thumbnail.svg
 summary: "DirectX11/C++ 기반 자체 게임엔진, 매주 새 팀으로 총 31명이 협업"
 team: "4인 1팀 로테이션 (13주간 총 31명 협업)"
 stack: ["DirectX11", "C++", "HLSL", "Lua", "Github Organization"]
@@ -230,4 +231,3 @@ DOF(Depth of Field) Post Process는 기존 Post Process 렌더 패스 구조(W05
 
 매 주차마다 새로운 요구사항에 맞춰 구조를 유연하게 바꿔야 했음. 어떤 때는 미리 잡아둔 설계 덕분에 작업 효율이 크게 올랐지만, 어떤 때는 그 설계 자체가 오버 엔지니어링이 되어 오히려 작업 속도를 늦추기도 했음. 이 경험을 통해 상황에 맞는 적절한 설계가 곧 완벽한 설계라는 것을 배움
 
-(Github 레포 링크는 실제 저장소 링크로 교체 예정)
