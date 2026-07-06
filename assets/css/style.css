@@ -277,7 +277,7 @@ a { color: inherit; text-decoration: none; }
 }
 .project-card .thumb {
   width: 100%;
-  aspect-ratio: 16/9;
+  height: 180px;
   border-radius: 8px;
   background: linear-gradient(135deg, var(--border) 0%, var(--card) 100%);
   display: flex;
@@ -286,7 +286,7 @@ a { color: inherit; text-decoration: none; }
   color: var(--text-muted);
   font-size: 15.5px;
 }
-.project-card .thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+.project-card .thumb img { width: 100%; height: 100%; object-fit: cover; object-position: center; border-radius: 8px; }
 .cat-badge { font-size: 13px; padding: 3px 9px; border-radius: 5px; align-self: flex-start; font-weight: 700; }
 .project-card h4 { font-size: 19px; font-weight: 700; margin: 0; }
 .project-card .period { font-size: 14.5px; color: var(--text-muted); }
