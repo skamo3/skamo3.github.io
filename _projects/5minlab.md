@@ -13,11 +13,20 @@ link_cards:
     logo: /assets/images/5minlab/logo.png
   - name: "Private Military Manager"
     url: "https://store.steampowered.com/app/2564320/_/"
+    inline: true
+toc:
+  - label: "PMM"
+    anchor: "#pmm"
+  - label: "3D 프린터 시뮬레이터"
+    anchor: "#3d-프린터-시뮬레이터"
+  - label: "태양광 샌드박스 게임 프로토타입"
+    anchor: "#태양광-샌드박스-게임-프로토타입"
 ---
 
-언리얼 엔진 기반 컨텐츠 개발을 담당했습니다.
-
 # PMM
+
+{% assign pmm_card = page.link_cards | where: "name", "Private Military Manager" | first %}
+{% include link-card.html name=pmm_card.name url=pmm_card.url desc=pmm_card.desc logo=pmm_card.logo og_image=pmm_card.og_image %}
 
 ## 엔진 버전 업데이트 적용 및 내부 툴 버그 해결
 

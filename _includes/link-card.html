@@ -1,0 +1,12 @@
+<div><a class="link-card" href="{{ include.url }}" target="_blank" rel="noopener">
+  <div class="link-card-text">
+    <p class="link-card-name">{{ include.name }}</p>
+    {% if include.desc %}<p class="link-card-desc">{{ include.desc }}</p>{% endif %}
+    <p class="link-card-url">🔗 {{ include.url }}</p>
+  </div>
+  {% if include.logo %}
+  <img class="link-card-logo" src="{{ include.logo | relative_url }}" alt="{{ include.name }}">
+  {% elsif include.og_image %}
+  <img class="link-card-logo" src="{{ include.og_image }}" alt="{{ include.name }}">
+  {% endif %}
+</a></div>

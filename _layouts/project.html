@@ -41,23 +41,22 @@ layout: default
   </div>
   {% endif %}
 
-  {% if page.link_cards %}
+  {% assign top_cards = page.link_cards | where_exp: "c", "c.inline != true" %}
+  {% if top_cards.size > 0 %}
   <div class="link-cards">
-    {% for c in page.link_cards %}
-    <a class="link-card" href="{{ c.url }}" target="_blank" rel="noopener">
-      <div class="link-card-text">
-        <p class="link-card-name">{{ c.name }}</p>
-        {% if c.desc %}<p class="link-card-desc">{{ c.desc }}</p>{% endif %}
-        <p class="link-card-url">🔗 {{ c.url }}</p>
-      </div>
-      {% if c.logo %}
-      <img class="link-card-logo" src="{{ c.logo | relative_url }}" alt="{{ c.name }}">
-      {% elsif c.og_image %}
-      <img class="link-card-logo" src="{{ c.og_image }}" alt="{{ c.name }}">
-      {% endif %}
-    </a>
+    {% for c in top_cards %}
+    {% include link-card.html name=c.name url=c.url desc=c.desc logo=c.logo og_image=c.og_image %}
     {% endfor %}
   </div>
+  {% endif %}
+
+  {% if page.toc %}
+  <nav class="project-toc">
+    <p class="toc-label">목차</p>
+    <ul>
+      {% for t in page.toc %}<li><a href="{{ t.anchor }}">{{ t.label }}</a></li>{% endfor %}
+    </ul>
+  </nav>
   {% endif %}
 
   {{ content }}

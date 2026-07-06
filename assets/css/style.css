@@ -434,6 +434,24 @@ a { color: inherit; text-decoration: none; }
 .link-card-url { font-size: 9.99px; color: var(--text-muted); margin: 0; }
 .link-card-logo { width: 64px; height: 64px; object-fit: contain; flex-shrink: 0; border-radius: 8px; background: #fff; padding: 4px; }
 
+.project-toc {
+  background: var(--card);
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin: 0 0 32px;
+}
+.project-toc .toc-label {
+  font-size: 10.73px;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: .04em;
+  margin: 0 0 8px;
+}
+.project-toc ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.project-toc a { font-size: 12.58px; color: var(--accent); }
+.project-toc a:hover { text-decoration: underline; }
+
 /* project modal */
 body.modal-open { overflow: hidden; }
 .project-modal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-start; justify-content: center; }
@@ -493,6 +511,8 @@ body.modal-open { overflow: hidden; }
 .project-modal .modal-body .link-card-name { font-size: 11.32px; }
 .project-modal .modal-body .link-card-desc { font-size: 9.99px; }
 .project-modal .modal-body .link-card-url { font-size: 8.99px; }
+.project-modal .modal-body .toc-label { font-size: 9.66px; }
+.project-modal .modal-body .project-toc a { font-size: 11.32px; }
 .project-modal .modal-body p,
 .project-modal .modal-body ul,
 .project-modal .modal-body ol { font-size: 13.99px; }
