@@ -337,6 +337,7 @@ a { color: inherit; text-decoration: none; }
 
 /* project detail page */
 .project-detail { max-width: 748px; margin: 0 auto; padding: 64px 24px; }
+.project-body h1[id], .project-body h2[id], .project-body h3[id] { scroll-margin-top: 76px; }
 .project-detail h1 { font-size: 50px; margin: 0 0 8px; }
 .project-detail h1:not(:first-of-type) { font-size: 37px; margin-top: 48px; }
 .project-detail .meta { font-size: 11.47px; color: var(--text-muted); margin-bottom: 8px; }
