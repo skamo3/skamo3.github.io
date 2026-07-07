@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "jekyll-serve",
+      "runtimeExecutable": "bundle",
+      "runtimeArgs": ["exec", "jekyll", "serve", "--port", "4002", "--skip-initial-build"],
+      "port": 4002,
+      "autoPort": false
+    }
+  ]
+}
