@@ -6,10 +6,22 @@ permalink: /blog/
 <section class="section wrap" style="padding-top:64px;">
   <p class="section-label">BLOG</p>
   <h2>블로그</h2>
+
+  <div class="blog-filter">
+    <button type="button" class="filter-tab active" data-cat="all">전체</button>
+    {% for c in site.data.blog_categories %}
+    <button type="button" class="filter-tab" data-cat="{{ c[0] }}" style="--tab-color:{{ c[1].color }};">{{ c[1].label }}</button>
+    {% endfor %}
+  </div>
+
   <div class="post-list">
     {% for post in site.posts %}
-    <a class="post-item" href="{{ post.url | relative_url }}">
-      <span class="title">{{ post.title }}</span>
+    {% assign cat = site.data.blog_categories[post.category] %}
+    <a class="post-item" href="{{ post.url | relative_url }}" data-cat="{{ post.category }}">
+      <span class="post-item-left">
+        {% if cat %}<span class="cat-badge" style="background:{{ cat.color }}22; color:{{ cat.color }};">{{ cat.label }}</span>{% endif %}
+        <span class="title">{{ post.title }}</span>
+      </span>
       <span class="date">{{ post.date | date: "%Y.%m.%d" }}</span>
     </a>
     {% endfor %}
@@ -18,3 +30,4 @@ permalink: /blog/
     {% endif %}
   </div>
 </section>
+<script src="{{ '/assets/js/blog-filter.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>

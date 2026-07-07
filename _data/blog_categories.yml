@@ -1,0 +1,15 @@
+unreal:
+  label: Unreal Engine
+  color: "#4FD1FF"
+unity:
+  label: Unity
+  color: "#8CC63F"
+algorithm:
+  label: "알고리즘·C++"
+  color: "#B18CFF"
+game-dev:
+  label: 게임 개발
+  color: "#F0997B"
+dev-notes:
+  label: 개발 지식
+  color: "#5DCAA5"

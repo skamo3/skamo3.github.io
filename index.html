@@ -52,8 +52,10 @@ title: Home
       {% for item in site.data.timeline %}
       {% assign side = forloop.index0 | modulo: 2 %}
       <div class="tv-item {{ item.track }} {% if side == 0 %}left{% else %}right{% endif %}" tabindex="0">
-        <div class="tv-dot"></div>
-        <p class="tv-period">{{ item.period }}</p>
+        <div class="tv-head">
+          <div class="tv-dot"></div>
+          <p class="tv-period">{{ item.period }}</p>
+        </div>
         <h3 class="tv-title">{{ item.title }}</h3>
         <div class="tv-detail">
           <span class="track-badge track-{{ item.track }}">{{ item.track | upcase }}</span>

@@ -1,0 +1,44 @@
+<svg viewBox="0 0 700 450" xmlns="http://www.w3.org/2000/svg" font-family="'Poppins','Noto Sans KR',sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1A1420"/>
+      <stop offset="100%" stop-color="#241612"/>
+    </linearGradient>
+    <radialGradient id="ball" cx="35%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#FFF3EA"/>
+      <stop offset="45%" stop-color="#F0997B"/>
+      <stop offset="100%" stop-color="#8A4A34"/>
+    </radialGradient>
+  </defs>
+  <rect width="700" height="450" fill="url(#bg)"/>
+
+  <!-- table net + court lines, right side -->
+  <g stroke="#4A3830" stroke-width="2" opacity="0.7">
+    <line x1="420" y1="230" x2="680" y2="230"/>
+    <line x1="550" y1="90" x2="550" y2="230"/>
+  </g>
+  <line x1="550" y1="90" x2="550" y2="230" stroke="#F0997B" stroke-width="3" opacity="0.85"/>
+
+  <!-- paddle, left -->
+  <g stroke="#F0997B" stroke-width="4" fill="#2A1E18">
+    <ellipse cx="470" cy="150" rx="46" ry="54" transform="rotate(-18 470 150)"/>
+  </g>
+  <line x1="470" y1="150" x2="440" y2="205" stroke="#8A6A56" stroke-width="10" stroke-linecap="round" transform="rotate(-18 470 150)"/>
+
+  <!-- ball + motion trail -->
+  <circle cx="530" cy="118" r="13" fill="url(#ball)"/>
+  <g stroke="#F0997B" stroke-width="2.5" stroke-dasharray="3 7" opacity="0.6" stroke-linecap="round">
+    <line x1="470" y1="150" x2="518" y2="126"/>
+  </g>
+
+  <!-- chat bubble, top right -->
+  <g stroke="#4FD1FF" stroke-width="3" fill="#12141F">
+    <path d="M600 60 h60 a10 10 0 0 1 10 10 v34 a10 10 0 0 1 -10 10 h-38 l-14 16 v-16 h-8 a10 10 0 0 1 -10 -10 v-34 a10 10 0 0 1 10 -10 z"/>
+  </g>
+  <circle cx="617" cy="87" r="3.5" fill="#4FD1FF"/>
+  <circle cx="633" cy="87" r="3.5" fill="#4FD1FF"/>
+  <circle cx="649" cy="87" r="3.5" fill="#4FD1FF"/>
+
+  <text x="50" y="280" fill="#EDF2E6" font-size="86" font-weight="900">Pongski</text>
+  <text x="55" y="335" fill="#B0A199" font-size="27" font-weight="600">Ping-Pong 매칭 · 실시간 채팅 웹</text>
+</svg>
