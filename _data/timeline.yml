@@ -2,40 +2,41 @@
   period: "2019.08 - 2019.11"
   track: edu
   bullets:
-    - "AI 챗봇/자연어처리 중심 취업 교육과정 수료"
+    - "Python 챗봇 개발 및 인공지능과 자연어 처리 기초 학습"
+    - "Tensorflow 기반 모델 제작 실습 및 Kaggle, 서울 인공지능 챗봇톤 참여 및 우수상 수상"
 - title: 42 Seoul
   period: "2020.01 - 2021.10"
   track: edu
   bullets:
-    - "C/C++ 기반 커리큘럼 (MiniRT, Pongski, ft_container 등)"
+    - "C, C++, Docker, 네트워크, 그래픽스, Web 프로젝트를 해결하며 자료구조, 알고리즘, 멀티스레딩, 컴퓨터 사이언스 학습"
+    - "과제마다 동료 학습 과정을 거쳐 개발자 간 협업/코드 리뷰 경험을 쌓음"
 - title: 스마일게이트 챌린지 시즌3
   period: "2022.01 - 2022.04"
   track: edu
   bullets:
-    - "Project ¡Hola! — Unreal Engine 4.27, Gameplay/Level Design, Interaction & Weapon System"
+    - "스마일게이트 퓨처랩 주관 단기 게임 개발 프로젝트"
+    - "4인 팀으로 UE 기반 퍼즐 어드벤처 게임 데모 제작"
 - title: SEA:ME Pilot Program
   period: "2022.09 - 2023.02"
   track: edu
   bullets:
-    - "임베디드/네트워크 중심 교육 프로그램, 4주 단위 팀 프로젝트 2회 수행"
+    - "폭스바겐 코리아와 독일 42 Wolfsburg가 연계한 자동차 임베디드 소프트웨어 인재양성 프로그램"
+    - "독일 Wolfsburg에 6개월 간 파견되어 자동차 임베디드 프로젝트를 수행하고 현지의 현업 개발자들과 협업 및 커뮤니케이션 경험"
 - title: Deepbrain AI
   period: "2023.08 - 2025.02"
   track: work
   bullets:
-    - "메타버스팀 | 정직원 — 언리얼 엔진 컨텐츠 개발 총괄 및 서버 배포"
-    - "메타휴먼 기반 실시간 대화형 3D AI 아바타 서비스 개발"
-    - "Speech(STT/TTS/Chatbot) 플러그인 제작(자사 API·AWS·Google), Web Streaming/Kiosk 최적화(20→50fps)"
+    - "메타버스팀 | 정직원 — 회사의 언리얼 엔진 기반 컨텐츠 개발과 서버 배포 담당"
+    - "메타휴먼 기반 실시간 대화형 3D AI 서비스 개발 및 서비스용 플러그인 제작"
 - title: 크래프톤 정글 게임테크랩 1기
   period: "2025.03 - 2025.08"
   track: edu
   bullets:
-    - "Engine-SIU(자체 게임엔진, DirectX11) — 4인 팀"
-    - "AudioTracing(UE5.5 오디오 플러그인)"
+    - "UE5 플러그인 AudioTracing 제작 및 FAB 출시"
+    - "게임 엔진 아키텍처와 UE를 참고한 DirectX11 기반 자체 게임엔진 제작으로 게임 엔진 구조와 구성 방식에 대해 학습"
 - title: 5minlab
   period: "2025.10 - 2026.01"
   track: work
   bullets:
-    - "5ml tech dept. | 인턴"
-    - "PMM(Private Military Manager) 버전 업데이트"
-    - "3D 프린터 시뮬레이터 기능 추가/최적화 (NaniteMesh 실시간 생성 프레임 드랍 최적화, Unreal Insight)"
-    - "태양광 패널 기반 신작 샌드박스형 게임 프로토타입 개발"
+    - "5ml tech dept. | 인턴 — 언리얼 엔진 기반 컨텐츠 버전 업데이트 및 기능 추가"
+    - "UE 기반 게임 1인 프로토타이핑 진행"

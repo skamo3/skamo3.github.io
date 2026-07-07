@@ -8,6 +8,11 @@
     {% endif %}
   </div>
   <span class="cat-badge" style="background:{{ cat.color }}22; color:{{ cat.color }};">{{ cat.label }}</span>
+  {% assign title_parts = include.p.title | split: " (" %}
+  {% if title_parts.size > 1 %}
+  <h4>{{ title_parts[0] }}<br>({{ title_parts[1] }}</h4>
+  {% else %}
   <h4>{{ include.p.title }}</h4>
+  {% endif %}
   <p class="period">{{ include.p.period }}</p>
 </a>
