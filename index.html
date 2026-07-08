@@ -3,43 +3,34 @@ layout: default
 title: Home
 ---
 <section class="hero wrap" id="about">
-  <p class="eyebrow">ALWAYS PIONEER ALWAYS CHALLENGE</p>
-  <div class="hero-heading">
-    <h1>김주찬</h1>
-    <div class="role-badges">
-      <div class="role-badge">Game Client Programmer</div>
-      <div class="role-badge">Graphics Programmer</div>
+  <div class="hero-grid">
+    <div class="hero-photo">
+      <img src="{{ '/assets/images/shared/profile.jpg' | relative_url }}" alt="김주찬">
     </div>
-  </div>
-  <p class="tagline">
-    원리를 이해하는 것을 좋아해 깊게 파고들며 엔진 코드를 분석하고 아키텍처를 설계하는 것을 좋아합니다.
-    끊임없이 새로운 지식을 습득하고 호기심을 풀어내기 위해 게임 개발을 지속합니다.<br>
-    가장 앞에 서 있을 때 가장 많이 성장한다고 생각하여 언제나 개척하고 이끌어 나갑니다.<br>
-    AI 시대에 맞춰 게임 개발을 넘어 게임을 만드는 제작자가 되기 위해 나아가고 있습니다.
-  </p>
-  <div class="cta">
-    <a class="btn btn-primary" href="#projects">프로젝트 보기</a>
-    <a class="btn btn-ghost" href="#contact">문의하기</a>
-  </div>
-</section>
-
-<section class="section" id="skills">
-  <div class="wrap">
-    <p class="section-label">SKILLSET</p>
-    <h2>기술 스택</h2>
-    <div class="skill-chips">
-      {% for s in site.data.skills %}
-      <div class="skill-chip">
-        <span class="skill-icon">
-          {% if s.type == "logo" %}
-          <img src="https://cdn.simpleicons.org/{{ s.icon }}/8B949E" alt="" loading="lazy">
-          {% else %}
-          <i class="ti {{ s.icon }}" aria-hidden="true"></i>
-          {% endif %}
-        </span>
-        {{ s.name }}
+    <div class="hero-content">
+      <p class="eyebrow">ALWAYS PIONEER ALWAYS CHALLENGE</p>
+      <div class="hero-heading">
+        <h1>김주찬</h1>
+        <div class="role-badges">
+          <div class="role-badge">Game Client Programmer</div>
+          <div class="role-badge">Graphics Programmer</div>
+        </div>
       </div>
-      {% endfor %}
+      <p class="tagline">
+        원리를 이해할 때까지 파고들며, 필요한 걸 스스로 찾아 채워왔습니다.<br>
+        반복되는 불편함을 구조로 풀어내는 데서 가장 큰 재미를 느낍니다.<br>
+        가장 앞에 서서 부딪힐 때 가장 많이 배운다고 생각해, 새로운 영역 앞에서도 망설이지 않습니다.<br>
+        게임을 만드는 걸 넘어, AI 시대의 제작자가 되기 위해 나아가고 있습니다.
+      </p>
+      <ul class="hero-facts">
+        <li>딥브레인AI에서 Unreal Engine 개발을 총괄하며 캐릭터 시스템과 발화 플러그인을<br>설계·구축</li>
+        <li>크래프톤 정글에서 자체 게임엔진 아키텍처를 설계하고, 직접 만든 플러그인 AudioTracing을 Fab에 정식 출시</li>
+        <li>C++ 6년 이상, UE 4.24부터 이어온 그래픽스·엔진 전문성</li>
+      </ul>
+      <div class="cta">
+        <a class="btn btn-primary" href="#projects">프로젝트 보기</a>
+        <a class="btn btn-ghost" href="#contact">문의하기</a>
+      </div>
     </div>
   </div>
 </section>
@@ -67,6 +58,27 @@ title: Home
       {% endfor %}
     </div>
     <p class="th-hint">항목에 마우스를 올리면(또는 탭하면) 세부 내용이 펼쳐집니다</p>
+  </div>
+</section>
+
+<section class="section" id="skills">
+  <div class="wrap">
+    <p class="section-label">SKILLSET</p>
+    <h2>기술 스택</h2>
+    <div class="skill-chips">
+      {% for s in site.data.skills %}
+      <div class="skill-chip">
+        <span class="skill-icon">
+          {% if s.type == "logo" %}
+          <img src="https://cdn.simpleicons.org/{{ s.icon }}/8B949E" alt="" loading="lazy">
+          {% else %}
+          <i class="ti {{ s.icon }}" aria-hidden="true"></i>
+          {% endif %}
+        </span>
+        {{ s.name }}
+      </div>
+      {% endfor %}
+    </div>
   </div>
 </section>
 
@@ -99,35 +111,29 @@ title: Home
 
 <script src="{{ '/assets/js/project-highlight.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
 
-<section class="section" id="blog-preview">
-  <div class="wrap">
-    <p class="section-label">BLOG</p>
-    <h2>최근 글</h2>
-    <div class="post-list">
-      {% for post in site.posts limit:3 %}
-      <a class="post-item" href="{{ post.url | relative_url }}">
-        <span class="title">{{ post.title }}</span>
-        <span class="date">{{ post.date | date: "%Y.%m.%d" }}</span>
-      </a>
-      {% endfor %}
-      {% if site.posts.size == 0 %}
-      <p class="about-text">아직 작성된 글이 없습니다.</p>
-      {% endif %}
-    </div>
-  </div>
-</section>
-
 <section class="section" id="contact">
   <div class="wrap">
     <p class="section-label">CONTACT</p>
     <h2>문의하기</h2>
-    <div class="contact-box">
-      <div>
-        <h3>함께 일해보고 싶으신가요?</h3>
-        <p>채용 제안, 협업 문의 모두 환영합니다. 이메일로 편하게 연락 주세요.</p>
+    <form class="contact-form" id="contact-form">
+      <input type="hidden" name="access_key" value="3ad1f82c-1a7e-4893-8f05-580c66770ed5">
+      <input type="hidden" name="subject" value="포트폴리오 문의">
+      <input type="checkbox" name="botcheck" style="display:none" tabindex="-1" autocomplete="off">
+      <div class="form-field">
+        <label for="cf-name">이름</label>
+        <input type="text" id="cf-name" name="name" placeholder="이름을 입력해주세요" required>
       </div>
-      <a class="btn btn-primary" href="mailto:{{ site.author.email }}?subject=포트폴리오 문의">이메일 보내기</a>
-    </div>
+      <div class="form-field">
+        <label for="cf-email">이메일</label>
+        <input type="email" id="cf-email" name="email" placeholder="이메일을 입력해주세요" required>
+      </div>
+      <div class="form-field">
+        <label for="cf-message">내용</label>
+        <textarea id="cf-message" name="message" rows="6" placeholder="내용을 입력해주세요" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">전송</button>
+      <p class="form-status" id="cf-status" hidden></p>
+    </form>
     <div class="contact-links">
       <a href="https://github.com/{{ site.author.github }}" target="_blank" rel="noopener">Github</a>
       <a href="https://free-grin-2e0.notion.site/portfolio" target="_blank" rel="noopener">Notion 포트폴리오</a>
@@ -135,3 +141,5 @@ title: Home
     </div>
   </div>
 </section>
+
+<script src="{{ '/assets/js/contact-form.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>

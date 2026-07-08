@@ -2,7 +2,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script>
 (function () {
-  if (localStorage.getItem("theme") !== "dark") {
+  var saved = localStorage.getItem("theme");
+  if (saved === "dark") return;
+  if (saved === "light") {
+    document.documentElement.setAttribute("data-theme", "light");
+    return;
+  }
+  var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  if (!prefersDark) {
     document.documentElement.setAttribute("data-theme", "light");
   }
 })();
