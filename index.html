@@ -87,7 +87,7 @@ title: Home
     <p class="section-label">PROJECTS</p>
     <h2>프로젝트</h2>
 
-    <div class="project-group">
+    <div class="project-group" data-company-projects hidden>
       <h3>회사 프로젝트</h3>
       <div class="project-grid">
         {% assign company_projects = site.projects | where: "type", "company" | sort: "order" %}
@@ -109,6 +109,7 @@ title: Home
   </div>
 </section>
 
+<script src="{{ '/assets/js/company-projects-gate.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
 <script src="{{ '/assets/js/project-highlight.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
 
 <section class="section" id="contact">
