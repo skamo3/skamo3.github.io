@@ -14,7 +14,7 @@
   form.addEventListener("submit", function (e) {
     e.preventDefault();
     button.disabled = true;
-    button.textContent = "전송 중...";
+    button.textContent = "Pinging...";
 
     var data = Object.fromEntries(new FormData(form));
 
@@ -26,7 +26,7 @@
       .then(function (res) { return res.json(); })
       .then(function (result) {
         if (result.success) {
-          setStatus("문의가 전송되었습니다. 감사합니다!", false);
+          setStatus("핑이 전달됐습니다. 곧 응답할게요!", false);
           form.reset();
         } else {
           setStatus("전송에 실패했습니다. 잠시 후 다시 시도해주세요.", true);
@@ -37,7 +37,7 @@
       })
       .finally(function () {
         button.disabled = false;
-        button.textContent = "전송";
+        button.textContent = "Ping";
       });
   });
 })();
