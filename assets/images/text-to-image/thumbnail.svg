@@ -1,0 +1,38 @@
+<svg viewBox="0 0 700 450" xmlns="http://www.w3.org/2000/svg" font-family="'Poppins','Noto Sans KR',sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#161221"/>
+      <stop offset="100%" stop-color="#1F1A2A"/>
+    </linearGradient>
+  </defs>
+  <rect width="700" height="450" fill="url(#bg)"/>
+
+  <!-- text input chip -->
+  <g>
+    <rect x="52" y="96" width="150" height="46" rx="10" fill="#241E33" stroke="#B98CFF" stroke-width="2"/>
+    <text x="72" y="126" fill="#EDE6FF" font-size="22" font-weight="600">"apple"</text>
+  </g>
+
+  <!-- arrow -->
+  <line x1="212" y1="119" x2="272" y2="119" stroke="#B98CFF" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="282,119 262,109 262,129" fill="#B98CFF"/>
+
+  <!-- GAN box -->
+  <g>
+    <rect x="292" y="88" width="116" height="62" rx="10" fill="#2C2340" stroke="#B98CFF" stroke-width="2"/>
+    <text x="316" y="127" fill="#EDE6FF" font-size="22" font-weight="800">GAN</text>
+  </g>
+
+  <!-- arrow -->
+  <line x1="418" y1="119" x2="478" y2="119" stroke="#B98CFF" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="488,119 468,109 468,129" fill="#B98CFF"/>
+
+  <!-- sketch apple, quickdraw style -->
+  <g stroke="#EDE6FF" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M556 100 C540 96 528 108 526 122 C500 118 480 138 482 164 C484 196 508 224 534 224 C542 224 546 218 556 218 C566 218 570 224 578 224 C604 224 628 196 630 164 C632 138 612 118 586 122 C584 108 572 96 556 100 Z"/>
+    <path d="M556 100 C558 88 566 80 578 78" />
+  </g>
+
+  <text x="50" y="286" fill="#EDE6FF" font-size="80" font-weight="900">Text to Image</text>
+  <text x="55" y="336" fill="#9C90B8" font-size="27" font-weight="600">QuickDraw 데이터로 만든 조건부 GAN</text>
+</svg>
