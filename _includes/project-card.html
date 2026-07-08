@@ -1,5 +1,6 @@
 {% assign cat = site.data.categories[include.p.category] %}
-<a class="project-card js-project-card" href="{{ include.p.url | relative_url }}">
+<a class="project-card js-project-card" href="{{ include.p.url | relative_url }}" data-slug="{{ include.p.slug }}">
+  <img class="highlight-badge" src="{{ '/assets/images/shared/highlight-star.webp' | relative_url }}" alt="먼저 봐주세요" title="먼저 봐주세요">
   <div class="thumb">
     {% if include.p.thumbnail %}
     <img src="{{ include.p.thumbnail | relative_url }}" alt="{{ include.p.title }}">
