@@ -13,3 +13,6 @@ game-dev:
 dev-notes:
   label: 개발 지식
   color: "#5DCAA5"
+ai:
+  label: AI
+  color: "#FFC857"
