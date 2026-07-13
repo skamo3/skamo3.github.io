@@ -4,6 +4,7 @@ _site/
 .bundle/
 vendor/
 .sass-cache/
+*.log
 
 # local-only project notes, not for the public repo
 /docs/

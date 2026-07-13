@@ -487,6 +487,8 @@ a { color: inherit; text-decoration: none; }
 .post-content ul, .post-content ol { color: var(--text); margin: 0 0 16px; padding-left: 22px; }
 .post-content li { margin-bottom: 6px; }
 .post-content img, .post-content video { max-width: 100%; border-radius: 12px; margin: 0 0 24px; display: block; }
+.post-content .video-embed { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 0 0 24px; border-radius: 12px; background: var(--card); }
+.post-content .video-embed iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; border-radius: 12px; }
 .post-content blockquote {
   margin: 0 0 16px;
   padding: 10px 18px;
@@ -590,8 +592,13 @@ a { color: inherit; text-decoration: none; }
 .project-detail h3 { font-size: 15.54px; margin: 28px 0 12px; }
 .project-detail p { font-size: 15.54px; color: var(--text); margin: 0 0 16px; }
 .project-detail img, .project-detail video { max-width: 100%; border-radius: 12px; margin: 0 0 24px; display: block; }
+.project-detail img.flow-diagram {
+  width: min(100%, 520px);
+  margin: 12px auto 32px;
+}
 .project-detail .video-embed { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 0 0 24px; border-radius: 12px; background: var(--card); }
 .project-detail .video-embed iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; border-radius: 12px; }
+.project-detail .video-embed.compact { max-width: 88%; margin-left: auto; margin-right: auto; }
 .project-detail ul, .project-detail ol { font-size: 15.54px; color: var(--text); padding-left: 20px; margin: 0 0 16px; }
 .project-detail li { margin-bottom: 6px; }
 .project-detail li ul, .project-detail li ol { margin-top: 6px; }
@@ -650,6 +657,69 @@ a { color: inherit; text-decoration: none; }
   display: inline-block;
   padding: 2px 8px;
   border-radius: 5px;
+}
+
+.project-detail .failure-loop {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 4px 0 32px;
+}
+.project-detail .failure-card {
+  position: relative;
+  background: var(--card);
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px 14px;
+}
+.project-detail .failure-card:last-child {
+  grid-column: 1 / -1;
+}
+.project-detail .failure-card .failure-index {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--accent);
+  opacity: .75;
+  margin: 0;
+}
+.project-detail .failure-card h2 {
+  font-size: 14px;
+  margin: 0 36px 12px 0;
+}
+.project-detail .failure-card dl {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 6px 10px;
+  margin: 0;
+}
+.project-detail .failure-card dt {
+  font-size: 10.73px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: .02em;
+}
+.project-detail .failure-card dd {
+  font-size: 12.58px;
+  line-height: 1.55;
+  color: var(--text);
+  margin: 0;
+}
+.project-detail .failure-card dd:last-child {
+  color: var(--accent);
+}
+@media (max-width: 640px) {
+  .project-detail .failure-loop {
+    grid-template-columns: 1fr;
+  }
+  .project-detail .failure-card:last-child {
+    grid-column: auto;
+  }
+  .project-detail .failure-card dl {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
 }
 
 .link-cards { display: flex; flex-direction: column; gap: 12px; margin: 0 0 32px; }

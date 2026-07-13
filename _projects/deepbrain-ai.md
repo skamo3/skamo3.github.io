@@ -76,6 +76,8 @@ toc:
 - UMG를 이용해 캐릭터 변경, 목소리 변경, 채팅 시스템 UI 구현
   - ⇒ 런타임 테스트를 가능하게 하여 개발 속도 상향, UI를 유연하게 변경할 수 있도록 기능 분리를 해두어 프로젝트 별 필요 UI만 노출
 
+<img class="flow-diagram" src="/assets/images/deepbrain-ai/character-structure-flow.png" alt="캐릭터 구조 통합 흐름도">
+
 ## 캐릭터 영상 자료
 
 <div class="video-embed"><iframe src="https://drive.google.com/file/d/1sdYGcoxhU4GaiZWTK1PpvYFqgfU7ha9S/preview" title="캐릭터 영상 자료 1" allowfullscreen></iframe></div>
@@ -109,6 +111,10 @@ toc:
 - 프레임 지연과 성능 저하 문제
   - 서버로 요청을 넣을 때 API가 자체적으로 Async를 걸며 GameThread에서 지연 발생이 원인으로 모든 요청 로직을 FRunnable 하위 클래스를 이용해 스레드 분리
   - 파라미터 처리까지 스레드에서 처리 후 최종 적용만 GameThread로 넘겨 지연 문제를 해결
+
+<img class="flow-diagram" src="/assets/images/deepbrain-ai/speech-plugin-flow.png" alt="Speech Plugin 분리 흐름도">
+
+<img class="flow-diagram" src="/assets/images/deepbrain-ai/thread-flow.png" alt="요청 처리 스레드 분리 흐름도">
 
 # WebRTC 기반 웹 스트리밍 서비스 구현(Pixel Streaming)
 
