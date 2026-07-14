@@ -10,10 +10,14 @@
 <div id="project-modal" class="project-modal" hidden role="dialog" aria-modal="true">
   <div class="modal-backdrop"></div>
   <div class="modal-panel">
-    <button type="button" class="modal-close" aria-label="닫기">&times;</button>
+    <div class="modal-topbar">
+      <button type="button" class="modal-expand" aria-label="전체 화면으로 보기" title="전체 화면으로 보기"><i class="ti ti-arrows-diagonal" aria-hidden="true"></i></button>
+      <button type="button" class="modal-close" aria-label="닫기">&times;</button>
+    </div>
     <div class="modal-body project-detail"></div>
   </div>
 </div>
+<script src="{{ '/assets/js/company-projects-gate.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
 <script src="{{ '/assets/js/nav-toggle.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
 <script src="{{ '/assets/js/section-indent.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
 <script src="{{ '/assets/js/project-modal.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
