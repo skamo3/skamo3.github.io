@@ -51,6 +51,28 @@
     openModal(link.href, link);
   });
 
+  // 모달 내부 앵커 링크는 해시 네비게이션(popstate로 모달이 닫힘) 대신
+  // 모달 패널 안에서 직접 스크롤한다.
+  body.addEventListener("click", function (e) {
+    var link = e.target.closest('a[href^="#"]');
+    if (!link) return;
+    e.preventDefault();
+    var id = link.getAttribute("href").slice(1);
+    try {
+      id = decodeURIComponent(id);
+    } catch (err) {}
+    var target = body.querySelector('[id="' + id.replace(/"/g, '\\"') + '"]');
+    if (!target) return;
+    var panel = modal.querySelector(".modal-panel");
+    var top =
+      target.getBoundingClientRect().top -
+      panel.getBoundingClientRect().top +
+      panel.scrollTop -
+      16;
+    // smooth 스크롤은 렌더링이 멈춘 탭에서 진행되지 않아 즉시 이동으로 처리
+    panel.scrollTop = top;
+  });
+
   backdrop.addEventListener("click", function () {
     history.back();
   });
