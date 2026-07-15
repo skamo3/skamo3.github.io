@@ -4,7 +4,7 @@ type: company
 category: game-graphics
 period: "2023.08.01 - 2025.02.28"
 order: 2
-summary: "메타휴먼 기반 실시간 대화형 3D AI 아바타 서비스, Speech 플러그인, Web Streaming/Kiosk 최적화"
+summary: "메타휴먼 기반 실시간 대화형 3D AI 아바타 서비스, Viseme 립싱크, Speech 플러그인, Web Streaming/Kiosk 최적화"
 thumbnail: /assets/images/deepbrain-ai/thumbnail.png
 team: "메타버스팀 | 정직원"
 stack: ["Unreal Engine", "MetaHuman", "UMG", "Pixel Streaming"]
@@ -17,6 +17,8 @@ toc:
     anchor: "#프로젝트-개요"
   - label: "주요 업무"
     anchor: "#주요-업무"
+  - label: "Viseme to Facial Animation"
+    anchor: "#viseme-to-facial-animation"
   - label: "모듈형 캐릭터 / UI / 커스터마이징"
     anchor: "#모듈형-캐릭터--ui--커스터마이징"
   - label: "Speech Plugin 제작 및 런타임 최적화"
@@ -38,20 +40,65 @@ toc:
 
 - [프로젝트 개요](#프로젝트-개요)
 - [주요 업무](#주요-업무)
-- [모듈형 캐릭터 / UI / 커스터마이징](#모듈형-캐릭터--ui--커스터마이징)
+- [Viseme to Facial Animation](#viseme-to-facial-animation)
   - [구현 목적 및 문제](#구현-목적-및-문제)
   - [해결 방법](#해결-방법)
-  - [캐릭터 영상 자료](#캐릭터-영상-자료)
-- [Speech Plugin 제작 및 런타임 최적화](#speech-plugin-제작-및-런타임-최적화)
+- [모듈형 캐릭터 / UI / 커스터마이징](#모듈형-캐릭터--ui--커스터마이징)
   - [구현 목적 및 문제](#구현-목적-및-문제-1)
   - [해결 방법](#해결-방법-1)
-- [WebRTC 기반 웹 스트리밍 서비스 구현(Pixel Streaming)](#webrtc-기반-웹-스트리밍-서비스-구현pixel-streaming)
+  - [캐릭터 영상 자료](#캐릭터-영상-자료)
+- [Speech Plugin 제작 및 런타임 최적화](#speech-plugin-제작-및-런타임-최적화)
   - [구현 목적 및 문제](#구현-목적-및-문제-2)
   - [해결 방법](#해결-방법-2)
-- [키오스크 서비스 및 현장 데모](#키오스크-서비스-및-현장-데모)
+- [WebRTC 기반 웹 스트리밍 서비스 구현(Pixel Streaming)](#webrtc-기반-웹-스트리밍-서비스-구현pixel-streaming)
   - [구현 목적 및 문제](#구현-목적-및-문제-3)
   - [해결 방법](#해결-방법-3)
+- [키오스크 서비스 및 현장 데모](#키오스크-서비스-및-현장-데모)
+  - [구현 목적 및 문제](#구현-목적-및-문제-4)
+  - [해결 방법](#해결-방법-4)
   - [키오스크 서비스 사례](#키오스크-서비스-사례)
+
+# Viseme to Facial Animation
+
+## 구현 목적 및 문제
+
+- 딥브레인AI 아바타 서비스의 핵심은 STT/TTS 기반 캐릭터 발화 — TTS 음성에 맞춰 캐릭터의 입모양을 자연스럽게 움직이는 것이 서비스 품질을 결정하는 가장 중요한 과제
+- 사전에 준비된 대사에서 입모양 시퀀스를 뽑아내는 것은 정확도가 높았지만, 실시간으로 들어오는 음성을 즉시 Facial Animation에 적용하는 것이 가장 큰 난제
+- 기존에는 Oculus의 [OVR LipSync](https://developers.meta.com/horizon/documentation/unity/audio-ovrlipsync-unity/)를 사용 — 당시 립싱크 솔루션 중 UE 공식 플러그인이 있는 것은 OVR뿐이었는데, 그마저도 제대로 된 viseme 값을 내지 못하는 상태
+- 보간을 거쳐도 영어 발음에만 정확했고, OVR은 자체 viseme 기호 15종(sil, PP, FF, TH 등) 체계를 사용해 다른 viseme 데이터와 매칭이 어려움
+
+## 해결 방법
+
+- OVR 내부 코드를 카피·재작성해 출력 값을 세부적으로 컨트롤할 수 있도록 만든 뒤, Audio 파일을 입력으로 받아 출력된 viseme 값을 프레임 단위로 각 viseme마다 FFT 기반 보간·스무딩 적용
+- 다국어 지원을 위해 [Azure Speech Viseme](https://learn.microsoft.com/ko-kr/azure/ai-services/speech-service/how-to-speech-synthesis-viseme?tabs=visemeid&pivots=programming-language-python) 도입
+  - viseme ID 22종과 Audio offset(발화 타이밍) 형태로 반환되고, 언어별 음소 값→viseme 매핑을 제공해 언어 제약 해소
+  - UE를 지원하지 않아 viseme 요청·응답 API를 직접 라이브러리화해 UE로 이식
+- OVR과 Azure 두 viseme 소스를 같은 인터페이스로 함께 쓸 수 있도록 코드 통합
+  - ⇒ Speech Plugin의 멀티스레드 분리·플러그인화 작업에서 가장 큰 비중을 차지한 핵심 작업
+- Viseme을 애니메이션에 연결하는 방식을 여러 갈래로 연구 — Key 값으로 만들어 StateMachine에서 보간하는 방식, 커브로 만들어 보간하는 방식 등을 비교
+  - ⇒ Viseme별로 State를 전환하는 StateMachine 방식이 가장 정확도가 높았고, State별 블렌딩 속도·영향도·얼굴 표정까지 고려해 자연스럽게 이어지도록 구현
+- 캐릭터 모델마다 얼굴 근육 구성이 달라 캐릭터별 발음 기호 튜닝이 필요
+  - ⇒ AnimBP에서 StateMachine별 블렌딩 수치를 조절할 수 있도록 노출하고, 여러 발음 기호가 겹칠 때 multiply로 강조하는 식의 조합 튜닝까지 아티스트가 직접 할 수 있도록 시스템화 (모프타겟 자체 수정은 아티스트 영역으로 분리)
+
+<div class="video-embed"><iframe src="https://drive.google.com/file/d/1sdYGcoxhU4GaiZWTK1PpvYFqgfU7ha9S/preview" title="Viseme 립싱크 발화 데모" allowfullscreen></iframe></div>
+
+### NVIDIA ACE
+
+- 개발 도중 NVIDIA 카이로스(Kairos) 데모와 ACE(Audio2Face)가 공개되었고, 기존 작업 방식보다 더 빠르게 서비스에 적용해볼 수 있을 것이라 판단해 별도 적용 연구를 진행
+  - STT/TTS는 이미 플러그인으로 구현되어 있어 음성 파일을 가져다 넣는 것이 핵심이었고, TTS에서 바로 뽑혀 나온 음성 파일을 ACE 시스템에 넣어 더 자연스러운 얼굴이 나오는 것을 테스트
+  - ⇒ 기존 방식에 더해 더 높은 퀄리티의 페이셜 애니메이션을 뽑을 수 있는 가능성 확인
+
+<div class="link-cards">
+  <div><a class="link-card" href="/blog/2024/12/16/nvidia-ace-unreal/" target="_blank" rel="noopener">
+    <div class="link-card-text">
+      <p class="link-card-name">NVIDIA ACE 사용해보기</p>
+      <p class="link-card-desc">언리얼 엔진에 NVIDIA ACE 플러그인을 적용해 Audio2Face 기반 페이셜 애니메이션을 테스트한 기록</p>
+      <p class="link-card-url">/blog/2024/12/16/nvidia-ace-unreal/</p>
+    </div>
+  </a></div>
+</div>
+
+당시 참고 자료: [Azure viseme 소개 영상](https://www.youtube.com/watch?v=ui9XT47uwxs) · [Azure EmbodiedAI 립싱크 샘플](https://www.youtube.com/watch?v=lo898xUzPPA) · [언리얼4 립싱크(TTS) 구현 방법](https://nedcrow.tistory.com/entry/%EC%96%B8%EB%A6%AC%EC%96%BC4-%EB%A6%BD%EC%8B%B1%ED%81%ACText-To-Speech-%EA%B5%AC%ED%98%84-%EB%B0%A9%EB%B2%95-Part3)
 
 # 모듈형 캐릭터 / UI / 커스터마이징
 
@@ -79,8 +126,6 @@ toc:
 <img class="flow-diagram" src="/assets/images/deepbrain-ai/character-structure-flow.png" alt="캐릭터 구조 통합 흐름도">
 
 ## 캐릭터 영상 자료
-
-<div class="video-embed"><iframe src="https://drive.google.com/file/d/1sdYGcoxhU4GaiZWTK1PpvYFqgfU7ha9S/preview" title="캐릭터 영상 자료 1" allowfullscreen></iframe></div>
 
 ![캐릭터 부위별 커스터마이징 예시](/assets/images/deepbrain-ai/dbai-1.png)
 
