@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1600" viewBox="0 0 900 1600" role="img" aria-labelledby="title desc">
+  <title id="title">PMM UE 5.7 마이그레이션 흐름</title>
+  <desc id="desc">JS 업데이트에서 CEF 버전 불일치 확인, UE 5.7 선택, 플러그인 수정, 빌드 및 플레이 검증으로 이어지는 세로형 흐름도</desc>
+
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#1D2317" flood-opacity="0.08"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="6" refY="6" orient="auto">
+      <path d="M1,1 L11,6 L1,11 Z" fill="#0E9F52"/>
+    </marker>
+    <style>
+      .box { fill: #FFFFFF; stroke: #C9CDB2; stroke-width: 2; filter: url(#shadow); }
+      .box-focus { fill: #E8FBF0; stroke: #0E9F52; stroke-width: 2.5; filter: url(#shadow); }
+      .box-result { fill: #F7F8F1; stroke: #A3AC8F; stroke-width: 2; filter: url(#shadow); }
+      .accent { fill: #0E9F52; }
+      .step { font: 700 22px "Noto Sans KR", "Malgun Gothic", sans-serif; letter-spacing: 0; fill: #0E9F52; }
+      .heading { font: 700 42px "Noto Sans KR", "Malgun Gothic", sans-serif; letter-spacing: 0; fill: #1D2317; }
+      .detail { font: 500 27px "Noto Sans KR", "Malgun Gothic", sans-serif; letter-spacing: 0; fill: #666B54; }
+      .connector { fill: none; stroke: #0E9F52; stroke-width: 4; stroke-linecap: round; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <g transform="translate(70 55)">
+    <g>
+      <rect class="box" width="760" height="220" rx="18"/>
+      <rect class="accent" width="9" height="220" rx="4.5"/>
+      <text class="step" x="54" y="55">01 · 변경</text>
+      <text class="heading" x="54" y="122">JS 업데이트</text>
+      <text class="detail" x="54" y="172">Chromium 120+ 환경 요구</text>
+    </g>
+
+    <path class="connector" d="M380 238 L380 285"/>
+
+    <g transform="translate(0 310)">
+      <rect class="box" width="760" height="220" rx="18"/>
+      <rect class="accent" width="9" height="220" rx="4.5"/>
+      <text class="step" x="54" y="55">02 · 원인</text>
+      <text class="heading" x="54" y="122">CEF 버전 불일치</text>
+      <text class="detail" x="54" y="172">UE 5.5 · Chromium 90</text>
+    </g>
+
+    <path class="connector" d="M380 548 L380 595"/>
+
+    <g transform="translate(0 620)">
+      <rect class="box-focus" width="760" height="220" rx="18"/>
+      <rect class="accent" width="9" height="220" rx="4.5"/>
+      <text class="step" x="54" y="55">03 · 판단</text>
+      <text class="heading" x="54" y="122">UE 5.7 선택</text>
+      <text class="detail" x="54" y="172">CEF · Chromium 128</text>
+    </g>
+
+    <path class="connector" d="M380 858 L380 905"/>
+
+    <g transform="translate(0 930)">
+      <rect class="box" width="760" height="220" rx="18"/>
+      <rect class="accent" width="9" height="220" rx="4.5"/>
+      <text class="step" x="54" y="55">04 · 대응</text>
+      <text class="heading" x="54" y="122">플러그인 수정</text>
+      <text class="detail" x="54" y="172">Deprecated API · 빌드 오류 대응</text>
+    </g>
+
+    <path class="connector" d="M380 1168 L380 1215"/>
+
+    <g transform="translate(0 1240)">
+      <rect class="box-result" width="760" height="220" rx="18"/>
+      <rect class="accent" width="9" height="220" rx="4.5"/>
+      <text class="step" x="54" y="55">05 · 검증</text>
+      <text class="heading" x="54" y="122">빌드·플레이 검증</text>
+      <text class="detail" x="54" y="172">내부 툴 · 패키징 · Steam 빌드</text>
+    </g>
+  </g>
+</svg>
