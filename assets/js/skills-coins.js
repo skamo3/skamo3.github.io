@@ -8,7 +8,7 @@ const TIERS = {
   // AI 협업 도구용 홀로그램(프리즘) 티어 — 금속 팔레트 대신 무지개 코닉 그라데이션 + 물리 기반 iridescence
   prism: { base: '#e6e6f0', light: '#ffffff', dark: '#d0d0e0', rim: '#2a1f3d', rimHi: '#ffffff', engrave: '241b35', emboss: 'ffffff', glint: [1.0, 1.0, 1.0], prism: true },
 };
-const SPACING = 2.3; // 두 줄로 나눠 한 줄에 최대 5개만 들어가므로 넉넉하게
+const SPACING = 3.5; // 좌우 간격을 넓게
 const Y_BASE = 0.45;
 const FLOOR_Y = -0.62; // 반사를 코인에 조금 더 붙여 리본이 들어갈 여백을 남김
 
