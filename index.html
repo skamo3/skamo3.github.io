@@ -66,20 +66,31 @@ title: Home
   <div class="wrap">
     <p class="section-label">SKILLSET</p>
     <h2>기술 스택</h2>
-    <div class="skill-chips">
-      {% for s in site.data.skills %}
-      <div class="skill-chip">
-        <span class="skill-icon">
-          {% if s.type == "logo" %}
-          <img src="https://cdn.simpleicons.org/{{ s.icon }}/8B949E" alt="" loading="lazy">
-          {% else %}
-          <i class="ti {{ s.icon }}" aria-hidden="true"></i>
-          {% endif %}
-        </span>
-        {{ s.name }}
-      </div>
-      {% endfor %}
+    <p class="skills-hint">✦ 코인을 클릭하면 뒤집히고, 드래그로 당겼다 놓으면 튕기듯 되감깁니다 ✦</p>
+
+    <div class="skills-tier-row">
+      <p class="skills-tier-label tier-advanced">고급</p>
+      <canvas class="skills-coin-canvas" id="skills-coin-advanced"></canvas>
     </div>
+    <div class="skills-tier-row">
+      <p class="skills-tier-label tier-intermediate">중급</p>
+      <canvas class="skills-coin-canvas" id="skills-coin-intermediate"></canvas>
+    </div>
+    <div class="skills-tier-row">
+      <p class="skills-tier-label tier-beginner">초급</p>
+      <canvas class="skills-coin-canvas" id="skills-coin-beginner"></canvas>
+    </div>
+
+    <script type="application/json" id="skills-data">{{ site.data.skills | jsonify }}</script>
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+    </script>
+    <script type="module" src="{{ '/assets/js/skills-coins.js' | relative_url }}"></script>
   </div>
 </section>
 

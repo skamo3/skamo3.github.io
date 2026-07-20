@@ -1,30 +1,38 @@
+# tier: advanced(고급) / intermediate(중급) / beginner(초급)
+# type: logo(브랜드 로고, simpleicons slug) / text(브랜드 로고 없어 코인에 약자를 새김)
 - name: Unreal Engine
+  tier: advanced
   type: logo
   icon: unrealengine
 - name: C++
+  tier: advanced
   type: logo
   icon: cplusplus
-- name: DirectX11
-  type: icon
-  icon: ti-brand-windows
-- name: HLSL / Shader
-  type: icon
-  icon: ti-code
-- name: Ray Tracing
-  type: icon
-  icon: ti-bulb
-- name: Audio Programming
-  type: icon
-  icon: ti-wave-sine
-- name: Python
-  type: logo
-  icon: python
 - name: Git
+  tier: advanced
   type: logo
   icon: git
-- name: Perforce
-  type: logo
-  icon: perforce
 - name: Github
+  tier: advanced
   type: logo
   icon: github
+- name: Audio Programming
+  tier: advanced
+  type: text
+  abbr: AUDIO
+- name: DirectX11
+  tier: intermediate
+  type: text
+  abbr: DX11
+- name: Python
+  tier: intermediate
+  type: logo
+  icon: python
+- name: HLSL / Shader
+  tier: beginner
+  type: text
+  abbr: HLSL
+- name: TypeScript
+  tier: beginner
+  type: logo
+  icon: typescript
