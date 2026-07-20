@@ -247,6 +247,7 @@ a { color: inherit; text-decoration: none; }
 .skills-legend-item.tier-intermediate::before { background: var(--tier-silver); }
 .skills-legend-item.tier-beginner::before { background: var(--tier-bronze); }
 .skills-coin-canvas { width: 100%; height: 260px; display: block; touch-action: pan-y; }
+.skills-coin-canvas + .skills-coin-canvas { margin-top: 8px; }
 
 /* timeline (vertical, zigzag, expand on hover) */
 .timeline-v { position: relative; padding: 10px 0; }

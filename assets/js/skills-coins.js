@@ -6,7 +6,7 @@ const TIERS = {
   intermediate: { base: '#b8bec7', light: '#e6ebf0', dark: '#8d949e', rim: '#767d87', rimHi: '#f0f4f8', engrave: '43484f', emboss: 'eef2f6', glint: [0.95, 0.98, 1.0] },
   beginner: { base: '#b0703c', light: '#d99a66', dark: '#8a5628', rim: '#74491f', rimHi: '#e8b184', engrave: '46290f', emboss: 'ecc9a3', glint: [1.0, 0.87, 0.72] },
 };
-const SPACING = 2.0; // 9개가 한 줄에 들어가야 해서 티어별 3줄일 때보다 촘촘하게
+const SPACING = 2.3; // 두 줄로 나눠 한 줄에 최대 5개만 들어가므로 넉넉하게
 const Y_BASE = 0.45;
 const FLOOR_Y = -0.62; // 반사를 코인에 조금 더 붙여 리본이 들어갈 여백을 남김
 
@@ -358,7 +358,11 @@ async function buildCoinShelf(canvasId, items) {
 }
 
 const data = JSON.parse(document.getElementById('skills-data').textContent);
-await buildCoinShelf('skills-coin-shelf', data);
+const mid = Math.ceil(data.length / 2);
+await Promise.all([
+  buildCoinShelf('skills-coin-shelf-1', data.slice(0, mid)),
+  buildCoinShelf('skills-coin-shelf-2', data.slice(mid)),
+]);
 
 window.__labTick = t => updaters.forEach(u => u(t)); // 백그라운드 탭 등 rAF가 멈춘 환경에서 수동 렌더용
 const clock = new THREE.Clock();
