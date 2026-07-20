@@ -8,8 +8,9 @@ const TIERS = {
   // AI 협업 도구용 홀로그램(프리즘) 티어 — 금속 팔레트 대신 무지개 코닉 그라데이션 + 물리 기반 iridescence
   prism: { base: '#e6e6f0', light: '#ffffff', dark: '#d0d0e0', rim: '#2a1f3d', rimHi: '#ffffff', engrave: '241b35', emboss: 'ffffff', glint: [1.0, 1.0, 1.0], prism: true },
 };
-const SPACING = 3.5; // 좌우 간격을 넓게
-const COIN_SCALE = 1.1; // 동전 크기 +10%
+const SPACING = 4; // 좌우 간격을 넓게
+const COIN_SCALE = 1.045; // 동전 크기: 1.1에서 5% 축소
+const REFLECTION_GAP = 0.3; // 코인과 바닥 반사 사이 간격
 const Y_BASE = 0.45;
 const FLOOR_Y = -0.62; // 반사를 코인에 조금 더 붙여 리본이 들어갈 여백을 남김
 
@@ -379,7 +380,7 @@ async function buildCoinShelf(canvasId, items) {
       qWind.premultiply(qTmp);
       c.group.quaternion.multiplyQuaternions(qWind, qAuto);
       const gq = c.group.quaternion;
-      c.mirror.position.set(xs[i], 2 * FLOOR_Y - y, 0);
+      c.mirror.position.set(xs[i], 2 * FLOOR_Y - y - REFLECTION_GAP, 0);
       c.mirror.quaternion.set(-gq.x, gq.y, -gq.z, gq.w);
       c.ribbon.material.opacity += ((c.hovered ? 0.95 : 0) - c.ribbon.material.opacity) * Math.min(dt * 8, 1);
       c.glintMat.uniforms.uTime.value = t + i * 1.15;
