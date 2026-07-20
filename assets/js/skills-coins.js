@@ -9,6 +9,7 @@ const TIERS = {
   prism: { base: '#e6e6f0', light: '#ffffff', dark: '#d0d0e0', rim: '#2a1f3d', rimHi: '#ffffff', engrave: '241b35', emboss: 'ffffff', glint: [1.0, 1.0, 1.0], prism: true },
 };
 const SPACING = 3.5; // 좌우 간격을 넓게
+const COIN_SCALE = 1.1; // 동전 크기 +10%
 const Y_BASE = 0.45;
 const FLOOR_Y = -0.62; // 반사를 코인에 조금 더 붙여 리본이 들어갈 여백을 남김
 
@@ -240,6 +241,7 @@ async function buildCoinShelf(canvasId, items) {
     back.rotation.y = Math.PI;
     group.add(front, back);
     group.position.set(xs[i], Y_BASE, 0);
+    group.scale.setScalar(COIN_SCALE);
     scene.add(group);
 
     // 바닥 반사: 반전 복제본
@@ -253,12 +255,12 @@ async function buildCoinShelf(canvasId, items) {
     mirrorCoin.rotation.x = Math.PI / 2;
     const mirror = new THREE.Group();
     mirror.add(mirrorCoin);
-    mirror.scale.y = -0.85;
+    mirror.scale.set(COIN_SCALE, -0.85 * COIN_SCALE, COIN_SCALE);
     scene.add(mirror);
 
     // 이름 리본 (hover 시 표시)
     const ribbon = new THREE.Sprite(new THREE.SpriteMaterial({ map: ribbonTexture(item.name, tier.rimHi), transparent: true, opacity: 0, depthWrite: false, depthTest: false }));
-    ribbon.scale.set(2.1, 0.525, 1);
+    ribbon.scale.set(2.73, 0.6825, 1); // 리본 크기 +30%
     ribbon.position.set(xs[i], -1.05, 0);
     ribbon.renderOrder = 10;
     ribbon.raycast = () => {};
