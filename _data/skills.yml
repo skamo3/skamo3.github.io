@@ -30,8 +30,8 @@
   icon: typescript
 - name: Codex
   tier: prism
-  type: text
-  abbr: CODEX
+  type: logo
+  icon: openai
 - name: Claude
   tier: prism
   type: logo

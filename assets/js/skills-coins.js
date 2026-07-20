@@ -14,7 +14,15 @@ const FLOOR_Y = -0.62; // 반사를 코인에 조금 더 붙여 리본이 들어
 
 async function logoImage(slug, color) {
   const res = await fetch(`https://cdn.simpleicons.org/${slug}/${color}`);
-  let svg = await res.text();
+  let svg;
+  if (res.ok) {
+    svg = await res.text();
+  } else {
+    // cdn.simpleicons.org가 구버전을 캐시하고 있어 최신 아이콘(openai 등)이 없을 때의 폴백
+    const res2 = await fetch(`https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/${slug}.svg`);
+    svg = await res2.text();
+    svg = svg.replace(/<path /g, `<path fill="#${color}" `);
+  }
   if (!/\swidth=/.test(svg)) svg = svg.replace('<svg ', '<svg width="512" height="512" ');
   const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
   const img = new Image();
