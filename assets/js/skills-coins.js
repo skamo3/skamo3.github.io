@@ -5,6 +5,8 @@ const TIERS = {
   advanced: { base: '#d0a455', light: '#f0d68a', dark: '#a87f3d', rim: '#8a6a34', rimHi: '#f7e6ab', engrave: '5a4426', emboss: 'f5e8c0', glint: [1.0, 0.96, 0.82] },
   intermediate: { base: '#b8bec7', light: '#e6ebf0', dark: '#8d949e', rim: '#767d87', rimHi: '#f0f4f8', engrave: '43484f', emboss: 'eef2f6', glint: [0.95, 0.98, 1.0] },
   beginner: { base: '#b0703c', light: '#d99a66', dark: '#8a5628', rim: '#74491f', rimHi: '#e8b184', engrave: '46290f', emboss: 'ecc9a3', glint: [1.0, 0.87, 0.72] },
+  // AI 협업 도구용 홀로그램(프리즘) 티어 — 금속 팔레트 대신 무지개 코닉 그라데이션 + 물리 기반 iridescence
+  prism: { base: '#e6e6f0', light: '#ffffff', dark: '#d0d0e0', rim: '#2a1f3d', rimHi: '#ffffff', engrave: '241b35', emboss: 'ffffff', glint: [1.0, 1.0, 1.0], prism: true },
 };
 const SPACING = 2.3; // 두 줄로 나눠 한 줄에 최대 5개만 들어가므로 넉넉하게
 const Y_BASE = 0.45;
@@ -44,19 +46,24 @@ function starTexture() {
 
 function ribbonTexture(text, borderColor) {
   const c = document.createElement('canvas');
-  c.width = 512; c.height = 128;
+  c.width = 640; c.height = 160;
   const g = c.getContext('2d');
-  g.fillStyle = 'rgba(13, 17, 23, 0.88)';
+  g.fillStyle = 'rgba(13, 17, 23, 0.9)';
   g.strokeStyle = borderColor;
-  g.lineWidth = 5;
+  g.lineWidth = 6;
   g.beginPath();
-  g.roundRect(6, 14, 500, 100, 18);
+  g.roundRect(8, 18, 624, 124, 22);
   g.fill(); g.stroke();
-  g.fillStyle = '#f0f4f8';
-  g.font = '600 42px Poppins, "Noto Sans KR", sans-serif';
+  g.fillStyle = '#f8fbff';
+  let size = 60;
+  g.font = `700 ${size}px Poppins, "Noto Sans KR", sans-serif`;
+  while (g.measureText(text).width > 584 && size > 30) {
+    size -= 2;
+    g.font = `700 ${size}px Poppins, "Noto Sans KR", sans-serif`;
+  }
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.fillText(text, 256, 66);
+  g.fillText(text, 320, 82);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
@@ -80,12 +87,32 @@ function coinFaceTexture(tier, content) {
   const c = document.createElement('canvas');
   c.width = c.height = 512;
   const g = c.getContext('2d');
-  const grad = g.createRadialGradient(256, 236, 40, 256, 256, 260);
-  grad.addColorStop(0, tier.light);
-  grad.addColorStop(0.72, tier.base);
-  grad.addColorStop(1, tier.dark);
-  g.fillStyle = grad;
-  g.fillRect(0, 0, 512, 512);
+  if (tier.prism) {
+    let bg;
+    if (g.createConicGradient) {
+      bg = g.createConicGradient(0, 256, 256);
+      const hues = [340, 40, 90, 150, 200, 260, 340];
+      hues.forEach((h, i) => bg.addColorStop(i / (hues.length - 1), `hsl(${h}, 85%, 70%)`));
+    } else {
+      bg = g.createRadialGradient(256, 256, 20, 256, 256, 260);
+      bg.addColorStop(0, '#ffffff');
+      bg.addColorStop(1, '#d0d0e0');
+    }
+    g.fillStyle = bg;
+    g.fillRect(0, 0, 512, 512);
+    const sheen = g.createRadialGradient(200, 180, 10, 256, 256, 280);
+    sheen.addColorStop(0, 'rgba(255,255,255,0.55)');
+    sheen.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = sheen;
+    g.fillRect(0, 0, 512, 512);
+  } else {
+    const grad = g.createRadialGradient(256, 236, 40, 256, 256, 260);
+    grad.addColorStop(0, tier.light);
+    grad.addColorStop(0.72, tier.base);
+    grad.addColorStop(1, tier.dark);
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 512, 512);
+  }
   g.lineWidth = 16;
   g.strokeStyle = tier.rim;
   g.beginPath(); g.arc(256, 256, 234, 0, 7); g.stroke();
@@ -179,11 +206,14 @@ async function buildCoinShelf(canvasId, items) {
     backTex.center.set(0.5, 0.5);
     backTex.rotation = Math.PI;
     backTex.needsUpdate = true;
-    const faceMat = new THREE.MeshStandardMaterial({ map: faceTex, metalness: 0.9, roughness: 0.28, envMapIntensity: 1.3 });
-    const backMat = new THREE.MeshStandardMaterial({ map: backTex, metalness: 0.9, roughness: 0.28, envMapIntensity: 1.3 });
-    const sideMat = new THREE.MeshStandardMaterial({
-      color: tier.base, metalness: 0.95, roughness: 0.32, envMapIntensity: 1.3,
-      bumpMap: reedTex, bumpScale: 1.6,
+    // prism 티어는 MeshPhysicalMaterial의 iridescence로 진짜 무지개 박막 반사를 낸다
+    const MatClass = tier.prism ? THREE.MeshPhysicalMaterial : THREE.MeshStandardMaterial;
+    const iri = tier.prism ? { iridescence: 1, iridescenceIOR: 1.3, iridescenceThicknessRange: [100, 600] } : {};
+    const faceMat = new MatClass({ map: faceTex, metalness: 0.9, roughness: 0.22, envMapIntensity: 1.4, ...iri });
+    const backMat = new MatClass({ map: backTex, metalness: 0.9, roughness: 0.22, envMapIntensity: 1.4, ...iri });
+    const sideMat = new MatClass({
+      color: tier.base, metalness: 0.95, roughness: tier.prism ? 0.2 : 0.32, envMapIntensity: 1.4,
+      bumpMap: reedTex, bumpScale: 1.6, ...iri,
     });
     const coin = new THREE.Mesh(geo, [sideMat, faceMat, backMat]);
     coin.rotation.x = Math.PI / 2;
@@ -220,7 +250,7 @@ async function buildCoinShelf(canvasId, items) {
 
     // 이름 리본 (hover 시 표시)
     const ribbon = new THREE.Sprite(new THREE.SpriteMaterial({ map: ribbonTexture(item.name, tier.rimHi), transparent: true, opacity: 0, depthWrite: false, depthTest: false }));
-    ribbon.scale.set(1.7, 0.42, 1);
+    ribbon.scale.set(2.1, 0.525, 1);
     ribbon.position.set(xs[i], -1.05, 0);
     ribbon.renderOrder = 10;
     ribbon.raycast = () => {};
