@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-const TIERS = [
-  { base: '#d0a455', light: '#f0d68a', dark: '#a87f3d', rim: '#8a6a34', rimHi: '#f7e6ab', engrave: '5a4426', emboss: 'f5e8c0', glint: [1.0, 0.96, 0.82] },
-  { base: '#b8bec7', light: '#e6ebf0', dark: '#8d949e', rim: '#767d87', rimHi: '#f0f4f8', engrave: '43484f', emboss: 'eef2f6', glint: [0.95, 0.98, 1.0] },
-  { base: '#b0703c', light: '#d99a66', dark: '#8a5628', rim: '#74491f', rimHi: '#e8b184', engrave: '46290f', emboss: 'ecc9a3', glint: [1.0, 0.87, 0.72] },
-];
-const SPACING = 2.3;
+const TIERS = {
+  advanced: { base: '#d0a455', light: '#f0d68a', dark: '#a87f3d', rim: '#8a6a34', rimHi: '#f7e6ab', engrave: '5a4426', emboss: 'f5e8c0', glint: [1.0, 0.96, 0.82] },
+  intermediate: { base: '#b8bec7', light: '#e6ebf0', dark: '#8d949e', rim: '#767d87', rimHi: '#f0f4f8', engrave: '43484f', emboss: 'eef2f6', glint: [0.95, 0.98, 1.0] },
+  beginner: { base: '#b0703c', light: '#d99a66', dark: '#8a5628', rim: '#74491f', rimHi: '#e8b184', engrave: '46290f', emboss: 'ecc9a3', glint: [1.0, 0.87, 0.72] },
+};
+const SPACING = 2.0; // 9개가 한 줄에 들어가야 해서 티어별 3줄일 때보다 촘촘하게
 const Y_BASE = 0.45;
 const FLOOR_Y = -0.62; // 반사를 코인에 조금 더 붙여 리본이 들어갈 여백을 남김
 
@@ -146,9 +146,8 @@ const glintFrag = `
     gl_FragColor = vec4(uTint * band, band * 0.6);
   }`;
 
-async function buildCoinRow(canvasId, tierIdx, items) {
+async function buildCoinShelf(canvasId, items) {
   if (!items.length) return;
-  const tier = TIERS[tierIdx];
   const { canvas, renderer, scene, camera } = makeScene(canvasId);
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
@@ -166,6 +165,7 @@ async function buildCoinRow(canvasId, tierIdx, items) {
   const coins = [];
   for (let i = 0; i < n; i++) {
     const item = items[i];
+    const tier = TIERS[item.tier];
     let content;
     if (item.type === 'logo') {
       const [darkImg, lightImg] = await Promise.all([logoImage(item.icon, tier.engrave), logoImage(item.icon, tier.emboss)]);
@@ -358,14 +358,7 @@ async function buildCoinRow(canvasId, tierIdx, items) {
 }
 
 const data = JSON.parse(document.getElementById('skills-data').textContent);
-const rows = { advanced: [], intermediate: [], beginner: [] };
-data.forEach(s => rows[s.tier] && rows[s.tier].push(s));
-
-await Promise.all([
-  buildCoinRow('skills-coin-advanced', 0, rows.advanced),
-  buildCoinRow('skills-coin-intermediate', 1, rows.intermediate),
-  buildCoinRow('skills-coin-beginner', 2, rows.beginner),
-]);
+await buildCoinShelf('skills-coin-shelf', data);
 
 window.__labTick = t => updaters.forEach(u => u(t)); // 백그라운드 탭 등 rAF가 멈춘 환경에서 수동 렌더용
 const clock = new THREE.Clock();

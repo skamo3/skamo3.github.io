@@ -67,19 +67,13 @@ title: Home
     <p class="section-label">SKILLSET</p>
     <h2>기술 스택</h2>
     <p class="skills-hint">✦ 코인을 클릭하면 뒤집히고, 드래그로 당겼다 놓으면 튕기듯 되감깁니다 ✦</p>
+    <div class="skills-legend">
+      <span class="skills-legend-item tier-advanced">고급</span>
+      <span class="skills-legend-item tier-intermediate">중급</span>
+      <span class="skills-legend-item tier-beginner">초급</span>
+    </div>
 
-    <div class="skills-tier-row">
-      <p class="skills-tier-label tier-advanced">고급</p>
-      <canvas class="skills-coin-canvas" id="skills-coin-advanced"></canvas>
-    </div>
-    <div class="skills-tier-row">
-      <p class="skills-tier-label tier-intermediate">중급</p>
-      <canvas class="skills-coin-canvas" id="skills-coin-intermediate"></canvas>
-    </div>
-    <div class="skills-tier-row">
-      <p class="skills-tier-label tier-beginner">초급</p>
-      <canvas class="skills-coin-canvas" id="skills-coin-beginner"></canvas>
-    </div>
+    <canvas class="skills-coin-canvas" id="skills-coin-shelf"></canvas>
 
     <script type="application/json" id="skills-data">{{ site.data.skills | jsonify }}</script>
     <script type="importmap">
