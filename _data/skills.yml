@@ -28,11 +28,11 @@
   tier: intermediate
   type: logo
   icon: python
-- name: TypeScript
+- name: Unity
   tier: beginner
   type: logo
-  icon: typescript
-- name: React
+  icon: unity
+- name: C#
   tier: beginner
-  type: logo
-  icon: react
+  type: text
+  abbr: C#
