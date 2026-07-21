@@ -15,15 +15,24 @@ const Y_BASE = 0.45;
 const FLOOR_Y = -0.62; // 반사를 코인에 조금 더 붙여 리본이 들어갈 여백을 남김
 
 async function logoImage(slug, color) {
-  const res = await fetch(`https://cdn.simpleicons.org/${slug}/${color}`);
   let svg;
-  if (res.ok) {
+  if (slug.startsWith('devicon:')) {
+    // simple-icons에 아예 없는 브랜드(C# 등)는 devicon의 단색(plain) 버전을 가져와 직접 색칠
+    const name = slug.slice('devicon:'.length);
+    const res = await fetch(`https://cdn.jsdelivr.net/npm/devicon@latest/icons/${name}/${name}-plain.svg`);
     svg = await res.text();
+    // devicon svg는 path에 fill이 이미 박혀있어 그냥 덧붙이면 중복 속성으로 XML 파싱이 깨진다
+    svg = svg.replace(/fill="[^"]*"/g, '').replace(/<path /g, `<path fill="#${color}" `);
   } else {
-    // cdn.simpleicons.org가 구버전을 캐시하고 있어 최신 아이콘(openai 등)이 없을 때의 폴백
-    const res2 = await fetch(`https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/${slug}.svg`);
-    svg = await res2.text();
-    svg = svg.replace(/<path /g, `<path fill="#${color}" `);
+    const res = await fetch(`https://cdn.simpleicons.org/${slug}/${color}`);
+    if (res.ok) {
+      svg = await res.text();
+    } else {
+      // cdn.simpleicons.org가 구버전을 캐시하고 있어 최신 아이콘(openai 등)이 없을 때의 폴백
+      const res2 = await fetch(`https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/${slug}.svg`);
+      svg = await res2.text();
+      svg = svg.replace(/<path /g, `<path fill="#${color}" `);
+    }
   }
   if (!/\swidth=/.test(svg)) svg = svg.replace('<svg ', '<svg width="512" height="512" ');
   const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
