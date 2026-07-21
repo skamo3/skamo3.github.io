@@ -68,8 +68,7 @@ title: Home
     <h2>기술 스택</h2>
     <p class="skills-hint">✦ 코인을 클릭하고 드래그 해보세요 ✦</p>
 
-    <canvas class="skills-coin-canvas" id="skills-coin-shelf-1"></canvas>
-    <canvas class="skills-coin-canvas" id="skills-coin-shelf-2"></canvas>
+    <canvas class="skills-coin-canvas" id="skills-coin-shelf"></canvas>
 
     <script type="application/json" id="skills-data">{{ site.data.skills | jsonify }}</script>
     <script type="importmap">
@@ -80,7 +79,7 @@ title: Home
       }
     }
     </script>
-    <script type="module" src="{{ '/assets/js/skills-coins.js' | relative_url }}"></script>
+    <script type="module" src="{{ '/assets/js/skills-coins.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>
   </div>
 </section>
 

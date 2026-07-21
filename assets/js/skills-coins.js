@@ -399,11 +399,7 @@ async function buildCoinShelf(canvasId, items) {
 }
 
 const data = JSON.parse(document.getElementById('skills-data').textContent);
-const mid = Math.ceil(data.length / 2);
-await Promise.all([
-  buildCoinShelf('skills-coin-shelf-1', data.slice(0, mid)),
-  buildCoinShelf('skills-coin-shelf-2', data.slice(mid)),
-]);
+await buildCoinShelf('skills-coin-shelf', data);
 
 window.__labTick = t => updaters.forEach(u => u(t)); // 백그라운드 탭 등 rAF가 멈춘 환경에서 수동 렌더용
 const clock = new THREE.Clock();
