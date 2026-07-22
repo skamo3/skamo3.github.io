@@ -1,6 +1,6 @@
 (function () {
   var THRESHOLD = 200;
-  var pres = document.querySelectorAll(".post-content pre");
+  var pres = document.querySelectorAll(".post-content pre:not(.mermaid)");
   if (!pres.length) return;
 
   pres.forEach(function (pre) {

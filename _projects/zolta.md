@@ -20,8 +20,8 @@ toc:
     anchor: "#ai-개발-필수-사항으로-정해둔-것"
   - label: "적 유닛 AI 및 어그로 시스템"
     anchor: "#적-유닛-ai-및-어그로-시스템"
-  - label: "무기 시스템"
-    anchor: "#무기-시스템"
+  - label: "전투 시스템"
+    anchor: "#전투-시스템"
   - label: "개발 과정 블로그"
     anchor: "#개발-과정-블로그"
 ---
@@ -51,7 +51,7 @@ Codex에 하네스 엔지니어링을 적용해 개발 진행
     <div class="link-card-text">
       <p class="link-card-name">게임 개발에 Codex 활용하기</p>
       <p class="link-card-desc">Codex에 하네스 엔지니어링을 적용해 튜닝해나간 과정 정리</p>
-      <p class="link-card-url">/blog/2026/07/09/codex-zolta-workflow/</p>
+      <p class="link-card-date">2026.07.09</p>
     </div>
   </a></div>
 </div>
@@ -110,21 +110,42 @@ Codex에 하네스 엔지니어링을 적용해 개발 진행
     <div class="link-card-text">
       <p class="link-card-name">유닛 AI와 어그로 시스템</p>
       <p class="link-card-desc">Behavior Tree 전환과 AggroThreat 값 하나로 통일하기까지의 시행착오</p>
-      <p class="link-card-url">/blog/2026/07/13/zolta-unit-ai-aggro/</p>
+      <p class="link-card-date">2026.07.13</p>
     </div>
   </a></div>
 </div>
 
-# 무기 시스템
+# 전투 시스템
 
-무기가 캐릭터에 고정된 에셋으로 시작해 소켓 장착 방식으로 분리했고, `InteractionActor → ItemActor → WeaponActor` 3단 상속까지 발전시켰다가 과한 추상화로 판단해 되돌림. 지금은 무기 하나를 DataAsset으로 정의하고 GameplayAbility로 콤보 구간별 판정을 데이터로 관리하는 구조로 정리 중이며, 히트 판정도 캐릭터가 아닌 무기 자체가 갖도록 옮김
+처음엔 무기가 스킬 구성을 결정하는 무기 중심 전투로 시작. 무기를 소켓 장착 방식으로 분리하고 DataAsset+GameplayAbility로 콤보 판정을 데이터화하는 데까지 갔지만, 무기 조합이 주는 다양성이 곧 학습곡선과 밸런스 고착, 그리고 1인 개발의 데이터 관리 비용으로 돌아온다고 판단해 무기 시스템 자체를 걷어냄
+
+지금은 캐릭터가 기본공격과 `Skill 1~4`를 직접 소유하고, 룬으로 스킬을 변주해 다양성을 주는 방향으로 전환. 스킬의 판정과 상태는 GAS(GA/GE/GC)로 옮겨, 무기 콜리전과 복제 bool로 흩어져 있던 상태를 Ability의 수명 하나로 관리하는 구조로 정리 중
+
+<video class="post-video" controls preload="metadata">
+  <source src="{{ '/assets/video/zolta-weapon-to-character-skill/hero-attack-skill.mp4' | relative_url }}" type="video/mp4">
+  브라우저가 동영상 재생을 지원하지 않습니다.
+</video>
 
 <div class="link-cards">
+  <div><a class="link-card" href="/blog/2026/07/22/zolta-weapon-to-character-skill/" target="_blank" rel="noopener">
+    <div class="link-card-text">
+      <p class="link-card-name">무기 시스템에서 캐릭터 스킬로</p>
+      <p class="link-card-desc">무기 시스템을 걷어내고 캐릭터별 스킬로 전환한 기획 판단</p>
+      <p class="link-card-date">2026.07.22</p>
+    </div>
+  </a></div>
+  <div><a class="link-card" href="/blog/2026/07/22/gas-skill-implementation/" target="_blank" rel="noopener">
+    <div class="link-card-text">
+      <p class="link-card-name">GAS 로 스킬 구현하기</p>
+      <p class="link-card-desc">돌진 베기·차징 스킬을 예시로 GA/GE/GC 책임 분리 정리</p>
+      <p class="link-card-date">2026.07.22</p>
+    </div>
+  </a></div>
   <div><a class="link-card" href="/blog/2026/07/13/zolta-weapon-system/" target="_blank" rel="noopener">
     <div class="link-card-text">
       <p class="link-card-name">무기 시스템, 상속에서 데이터 기반으로</p>
-      <p class="link-card-desc">3단 상속을 되돌린 계기와 DataAsset+GAS 기반 무기 구조 정리</p>
-      <p class="link-card-url">/blog/2026/07/13/zolta-weapon-system/</p>
+      <p class="link-card-desc">걷어내기 전 무기 중심 구조를 DataAsset+GAS로 정리했던 과정</p>
+      <p class="link-card-date">2026.07.13</p>
     </div>
   </a></div>
 </div>
@@ -132,32 +153,53 @@ Codex에 하네스 엔지니어링을 적용해 개발 진행
 # 개발 과정 블로그
 
 <div class="link-cards">
-  <div><a class="link-card" href="/blog/2026/04/17/zolta-devlog/" target="_blank" rel="noopener">
+  <div><a class="link-card" href="/blog/2026/07/22/gas-skill-implementation/" target="_blank" rel="noopener">
     <div class="link-card-text">
-      <p class="link-card-name">[Zolta] 스타크래프트 유즈맵 왕의 기사 시리즈로부터</p>
-      <p class="link-card-desc">Zolta의 시작점과 하네스 엔지니어링 기반 작업 환경 정리</p>
-      <p class="link-card-url">/blog/2026/04/17/zolta-devlog/</p>
+      <p class="link-card-name">GAS 로 스킬 구현하기</p>
+      <p class="link-card-desc">돌진 베기·차징 스킬을 예시로 GA/GE/GC 책임 분리 정리</p>
+      <p class="link-card-date">2026.07.22</p>
     </div>
   </a></div>
-  <div><a class="link-card" href="/blog/2026/07/13/zolta-unit-ai-aggro/" target="_blank" rel="noopener">
+  <div><a class="link-card" href="/blog/2026/07/22/zolta-weapon-to-character-skill/" target="_blank" rel="noopener">
     <div class="link-card-text">
-      <p class="link-card-name">[Zolta] 유닛 AI와 어그로 시스템</p>
-      <p class="link-card-desc">Behavior Tree 전환과 AggroThreat 값 하나로 통일하기까지의 시행착오</p>
-      <p class="link-card-url">/blog/2026/07/13/zolta-unit-ai-aggro/</p>
+      <p class="link-card-name">[Zolta] 무기 시스템에서 캐릭터 스킬로</p>
+      <p class="link-card-desc">무기 시스템을 걷어내고 캐릭터별 스킬로 전환한 기획 판단</p>
+      <p class="link-card-date">2026.07.22</p>
+    </div>
+  </a></div>
+  <div><a class="link-card" href="/blog/2026/07/20/codex-ue-control-rig-animation/" target="_blank" rel="noopener">
+    <div class="link-card-text">
+      <p class="link-card-name">Codex 이용해 UE 애니메이션 제작해보기</p>
+      <p class="link-card-desc">Zolta 발도 스킬 모션을 Codex로 만들어보며 확인한 가능성과 한계</p>
+      <p class="link-card-date">2026.07.20</p>
     </div>
   </a></div>
   <div><a class="link-card" href="/blog/2026/07/13/zolta-weapon-system/" target="_blank" rel="noopener">
     <div class="link-card-text">
       <p class="link-card-name">[Zolta] 무기 시스템, 상속에서 데이터 기반으로</p>
       <p class="link-card-desc">3단 상속을 되돌린 계기와 DataAsset+GAS 기반 무기 구조 정리</p>
-      <p class="link-card-url">/blog/2026/07/13/zolta-weapon-system/</p>
+      <p class="link-card-date">2026.07.13</p>
+    </div>
+  </a></div>
+  <div><a class="link-card" href="/blog/2026/07/13/zolta-unit-ai-aggro/" target="_blank" rel="noopener">
+    <div class="link-card-text">
+      <p class="link-card-name">[Zolta] 유닛 AI와 어그로 시스템</p>
+      <p class="link-card-desc">Behavior Tree 전환과 AggroThreat 값 하나로 통일하기까지의 시행착오</p>
+      <p class="link-card-date">2026.07.13</p>
     </div>
   </a></div>
   <div><a class="link-card" href="/blog/2026/07/09/codex-zolta-workflow/" target="_blank" rel="noopener">
     <div class="link-card-text">
       <p class="link-card-name">[Codex] Zolta 개발하며 코덱스 조련하기</p>
       <p class="link-card-desc">Codex를 장기 프로젝트의 개발 파트너로 활용하기 위해 문서, 규칙, 검증 루프를 정리한 개발기</p>
-      <p class="link-card-url">/blog/2026/07/09/codex-zolta-workflow/</p>
+      <p class="link-card-date">2026.07.09</p>
+    </div>
+  </a></div>
+  <div><a class="link-card" href="/blog/2026/04/17/zolta-devlog/" target="_blank" rel="noopener">
+    <div class="link-card-text">
+      <p class="link-card-name">[Zolta] 스타크래프트 유즈맵 왕의 기사 시리즈로부터</p>
+      <p class="link-card-desc">Zolta의 시작점과 하네스 엔지니어링 기반 작업 환경 정리</p>
+      <p class="link-card-date">2026.04.17</p>
     </div>
   </a></div>
 </div>
