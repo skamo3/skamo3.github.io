@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 522 50" width="522" height="50" font-family="'Segoe UI', 'Noto Sans KR', system-ui, sans-serif" role="img" aria-label="6번부터 4칸을 더 칠해 2에서 5번, 6에서 9번이 모두 덮여 덧칠이 끝난 상태">
+  <g stroke="#d0d0d0" stroke-width="1">
+    <rect x="2" y="2" width="54" height="46" rx="5" fill="#ffffff"/>
+  </g>
+  <rect x="60"  y="2" width="228" height="46" rx="5" fill="#3b9bfd"/>
+  <rect x="292" y="2" width="228" height="46" rx="5" fill="#3b9bfd"/>
+  <g text-anchor="middle" dominant-baseline="central" font-weight="600" font-size="18">
+    <text x="29"  y="26" fill="#333">1</text>
+    <text x="174" y="26" fill="#ffffff">2 ~ 5</text>
+    <text x="406" y="26" fill="#ffffff">6 ~ 9</text>
+  </g>
+</svg>

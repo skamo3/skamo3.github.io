@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 464 50" width="464" height="50" font-family="'Segoe UI', 'Noto Sans KR', system-ui, sans-serif" role="img" aria-label="2번부터 4칸을 칠해 2에서 5번이 덮이고, 6번만 덧칠이 남은 상태">
+  <g stroke="#d0d0d0" stroke-width="1">
+    <rect x="2"   y="2" width="54" height="46" rx="5" fill="#ffffff"/>
+    <rect x="350" y="2" width="54" height="46" rx="5" fill="#ffffff"/>
+    <rect x="408" y="2" width="54" height="46" rx="5" fill="#ffffff"/>
+  </g>
+  <rect x="60"  y="2" width="228" height="46" rx="5" fill="#3b9bfd"/>
+  <rect x="292" y="2" width="54"  height="46" rx="5" fill="#e8590c"/>
+  <g text-anchor="middle" dominant-baseline="central" font-weight="600">
+    <text x="29"  y="26" font-size="18" fill="#333">1</text>
+    <text x="174" y="26" font-size="18" fill="#ffffff">2 ~ 5</text>
+    <text x="319" y="26" font-size="18" fill="#ffffff">6</text>
+    <text x="377" y="26" font-size="18" fill="#333">7</text>
+    <text x="435" y="26" font-size="18" fill="#333">8</text>
+  </g>
+</svg>

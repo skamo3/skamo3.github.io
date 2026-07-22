@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 464 50" width="464" height="50" font-family="'Segoe UI', 'Noto Sans KR', system-ui, sans-serif" role="img" aria-label="1번부터 8번 구역 중 2, 3, 6번이 덧칠이 필요한 상태">
+  <g stroke="#d0d0d0" stroke-width="1">
+    <rect x="2"   y="2" width="54" height="46" rx="5" fill="#ffffff"/>
+    <rect x="176" y="2" width="54" height="46" rx="5" fill="#ffffff"/>
+    <rect x="234" y="2" width="54" height="46" rx="5" fill="#ffffff"/>
+    <rect x="350" y="2" width="54" height="46" rx="5" fill="#ffffff"/>
+    <rect x="408" y="2" width="54" height="46" rx="5" fill="#ffffff"/>
+  </g>
+  <g fill="#e8590c">
+    <rect x="60"  y="2" width="54" height="46" rx="5"/>
+    <rect x="118" y="2" width="54" height="46" rx="5"/>
+    <rect x="292" y="2" width="54" height="46" rx="5"/>
+  </g>
+  <g font-size="18" font-weight="600" text-anchor="middle" dominant-baseline="central">
+    <text x="29"  y="26" fill="#333">1</text>
+    <text x="87"  y="26" fill="#ffffff">2</text>
+    <text x="145" y="26" fill="#ffffff">3</text>
+    <text x="203" y="26" fill="#333">4</text>
+    <text x="261" y="26" fill="#333">5</text>
+    <text x="319" y="26" fill="#ffffff">6</text>
+    <text x="377" y="26" fill="#333">7</text>
+    <text x="435" y="26" fill="#333">8</text>
+  </g>
+</svg>
