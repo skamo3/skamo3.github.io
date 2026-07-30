@@ -8,11 +8,22 @@ export const registry = [
     status: 'ready',
     file: 'worlds/ch0-pipeline.js',
     lesson: 'chapters/ch0-pipeline.lesson.md',
+    posts: [{ title: '렌더링 파이프라인 기초', url: '/blog/2026/07/27/rendering-pipeline-basics/' }],
     load: () => import('./ch0-pipeline.js'),
   },
 
+  {
+    id: 'ch1',
+    chapter: 'Ch1 · 지형과 표면',
+    title: '지형 + 풀 (누적)',
+    status: 'ready',
+    file: 'worlds/ch1-terrain.js',
+    lesson: 'chapters/ch1-terrain.lesson.md',
+    posts: [{ title: '지형 + 풀 만들기', url: '/blog/2026/07/30/terrain-grass-instancing/' }],
+    load: () => import('./ch1-terrain.js'),
+  },
+
   // 아래는 커리큘럼 예고 (완성 시 status:'ready' + load 연결)
-  { id: 'ch1', chapter: 'Ch1 · 지형과 표면',     title: '지형·풀·바람 (누적)',    status: 'soon' },
   { id: 'ch2', chapter: 'Ch2 · 빛과 재질',       title: 'PBR · 조명',            status: 'soon' },
   { id: 'ch3', chapter: 'Ch3 · 렌더링 아키텍처',  title: 'Deferred · G-buffer',   status: 'soon' },
   { id: 'ch4', chapter: 'Ch4 · 환경과 반사',      title: '물 · 반사 · 파티클',     status: 'soon' },
