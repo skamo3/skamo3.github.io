@@ -1,6 +1,8 @@
 ---
 title: Deepbrain AI
 type: company
+sitemap: false
+noindex: true
 category: game-graphics
 period: "2023.08.01 - 2025.02.28"
 order: 2

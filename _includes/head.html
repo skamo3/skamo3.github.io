@@ -21,5 +21,6 @@
 <link rel="icon" href="{{ '/assets/images/favicon.svg' | relative_url }}" type="image/svg+xml">
 <link rel="alternate icon" href="{{ '/favicon.ico' | relative_url }}">
 <link rel="apple-touch-icon" href="{{ '/assets/images/apple-touch-icon.png' | relative_url }}">
+{% if page.noindex %}<meta name="robots" content="noindex, nofollow">{% endif %}
 {% seo %}
 {% feed_meta %}

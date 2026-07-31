@@ -1,6 +1,8 @@
 ---
 title: 5minlab
 type: company
+sitemap: false
+noindex: true
 category: game-graphics
 period: "2025.10.20 - 2026.01.20"
 order: 1
