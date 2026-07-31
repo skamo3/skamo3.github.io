@@ -58,7 +58,7 @@ if (Character->HasAuthority() &&
 
 피해 판정 뒤에는 `GameplayCue.Attack.Ranged.Fire`를 실행한다. 이때 Cue에는 발사자, Hitscan 종점, 그리고 실제 피해 적용 성공 여부만 넘긴다. `UZoltaRangedAttackGameplayCue`를 상속한 Blueprint는 그 데이터를 받아 Muzzle에서 종점까지 Beam을 그리고, 명중한 경우에만 Impact FX를 재생한다.
 
-이렇게 나누면 FX가 늦게 재생되거나 교체되어도 피해 시점은 바뀌지 않는다. 기본 Ranged Minion에는 `P_MinionMuzzle`, `BotArc`, `BotArcImpact2`를 연결해뒀지만, 이들은 모두 이미 끝난 판정 결과를 표현하는 Cosmetic이다.
+이렇게 나누면 FX가 늦게 재생되거나 교체되어도 피해 시점은 바뀌지 않는다. 기본 Ranged Minion에는 Muzzle Flash, Beam, Impact FX를 연결해뒀지만, 이들은 모두 이미 끝난 판정 결과를 표현하는 Cosmetic이다.
 
 ```text
 Blackboard Target
@@ -72,14 +72,14 @@ Blackboard Target
 
 ## Beam 이펙트가 두 번 발사되는 것처럼 보이던 문제
 
-기본 Ranged Minion의 Beam(`BotArc`)이 한 번 쏠 때마다 두 번 반짝이는 것처럼 보이는 문제를 겪었다.
+기본 Ranged Minion의 Beam이 한 번 쏠 때마다 두 번 반짝이는 것처럼 보이는 문제를 겪었다.
 
 <video class="post-video" controls preload="metadata">
   <source src="{{ '/assets/video/zolta-ranged-unit-hitscan/double-shot-error.mp4' | relative_url }}" type="video/mp4">
   브라우저가 동영상 재생을 지원하지 않습니다.
 </video>
 
-원인은 판정 로직이 아니라 Beam Material에 있었다. `BotArc`가 쓰는 Material은 원래 일자형 레이저 텍스처인데, 여기에 마스크를 씌워 Panner로 흘려보내는 방식으로 Muzzle에서 종점까지 탄알이 날아가는 것처럼 보이게 만든다. TexCoord → Panner → Texture Sample 체인을 Speed X -7.4, -6.4, -4.8로 세 겹 겹치고, Add와 Lerp로 합쳐서 최종 색을 낸다.
+원인은 판정 로직이 아니라 Beam Material에 있었다. Beam이 쓰는 Material은 원래 일자형 레이저 텍스처인데, 여기에 마스크를 씌워 Panner로 흘려보내는 방식으로 Muzzle에서 종점까지 탄알이 날아가는 것처럼 보이게 만든다. TexCoord → Panner → Texture Sample 체인을 Speed X -7.4, -6.4, -4.8로 세 겹 겹치고, Add와 Lerp로 합쳐서 최종 색을 낸다.
 
 ![기존 Beam Material — TexCoord/Panner/Texture Sample 세 겹을 Add와 Lerp로 합치는 구조. Panner의 Time 입력은 따로 연결돼 있지 않다](/assets/images/zolta/beam-panner-material-before.png)
 
