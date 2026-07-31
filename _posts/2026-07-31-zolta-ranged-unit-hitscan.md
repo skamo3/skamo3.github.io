@@ -70,6 +70,27 @@ Blackboard Target
   -> GameplayCue Beam / Impact
 ```
 
+## Beam 이펙트가 두 번 발사되는 것처럼 보이던 문제
+
+기본 Ranged Minion의 Beam(`BotArc`)이 한 번 쏠 때마다 두 번 반짝이는 것처럼 보이는 문제를 겪었다.
+
+<video class="post-video" controls preload="metadata">
+  <source src="{{ '/assets/video/zolta-ranged-unit-hitscan/double-shot-error.mp4' | relative_url }}" type="video/mp4">
+  브라우저가 동영상 재생을 지원하지 않습니다.
+</video>
+
+원인은 판정 로직이 아니라 Beam Material에 있었다. `BotArc`가 쓰는 Material은 원래 일자형 레이저 텍스처인데, 여기에 마스크를 씌워 Panner로 흘려보내는 방식으로 Muzzle에서 종점까지 탄알이 날아가는 것처럼 보이게 만든다. TexCoord → Panner → Texture Sample 체인을 Speed X -7.4, -6.4, -4.8로 세 겹 겹치고, Add와 Lerp로 합쳐서 최종 색을 낸다.
+
+![기존 Beam Material — TexCoord/Panner/Texture Sample 세 겹을 Add와 Lerp로 합치는 구조. Panner의 Time 입력은 따로 연결돼 있지 않다](/assets/images/zolta/beam-panner-material-before.png)
+
+그런데 각 Panner의 Time 입력을 따로 연결해두지 않아서, 마스크가 파티클 개별 수명이 아니라 게임 전체 시간을 기준으로 계속 흘러가고 있었다. Panner 속도와 텍스처 타일링 주기가 파티클 하나가 떠 있는 시간보다 짧다 보니, 같은 파티클 안에서 마스크가 두 번 지나가면서 Beam이 두 번 발사된 것처럼 보이는 것이었다.
+
+Panner의 Time에 Particle Relative Time을 연결해서 고쳤다. 이 노드는 파티클마다 스폰 시점을 0으로 다시 잡아주기 때문에, 마스크가 게임 시간이 아니라 그 파티클 자신의 수명 기준으로 한 번만 흘러가게 된다.
+
+![Panner의 Time 입력에 Particle Relative Time을 연결한 구조 — 마스크가 파티클 수명 기준으로 한 번만 흐른다](/assets/images/zolta/beam-panner-material-relative-time.png)
+
+이후로는 원거리 공격 한 번에 Beam도 한 번만 반짝인다.
+
 ## 유닛 종류 별 확장 계층 구조
 
 원거리 기본 공격의 공통 C++ 기반은 `UGA_RangedAttack`이다. Montage, 발사 Socket, 피해 배율, 회복 시간, Damage Tag는 모두 `EditDefaultsOnly` 값으로 두고, 각 병종 Blueprint가 자기 에셋에 맞게 채운다. 코드에서 병종 이름을 분기하지 않고, 같은 기반을 다른 데이터로 재사용하는 구조다.
