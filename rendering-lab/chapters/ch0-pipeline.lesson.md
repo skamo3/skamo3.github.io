@@ -65,6 +65,23 @@ gl_Position = vec4(position, 1.0);
 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 ```
 
+## MVP 토글로 변환 전후 비교하기
+
+GUI의 "MVP 변환" 체크박스로 변환을 켜고 끌 수 있다.
+
+```glsl
+if (uMVP > 0.5) {
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+} else {
+  gl_Position = vec4(p, 1.0);
+}
+```
+
+- **켜기** — 원근이 있는 입체 큐브가 되고, 마우스로 돌리면 카메라가 큐브 주위를 돈다
+- **끄기** — 로컬 좌표가 그대로 클립 좌표가 되어 화면 가운데 납작한 사각형이 된다. 큐브 로컬 좌표가 -0.5~0.5라 화면의 가운데 부분을 덮고, 카메라를 돌려도 꿈쩍하지 않는다
+
+이 두 화면의 차이가 MVP 변환이 한 일 전부다. 정점을 월드에 놓고(Model), 카메라 기준으로 옮기고(View), 클립 공간으로 밀어 넣는(Projection) 과정이 없으면 정점 좌표는 화면 좌표로 쓰일 뿐이다.
+
 ## 관찰 포인트 (채우기 전 / 후)
 
 - **전**: 큐브가 화면 정중앙에 평면처럼 붙어 있고, 마우스로 카메라를 돌려도 꿈쩍 안 한다 (View·Projection이 빠졌으니까)

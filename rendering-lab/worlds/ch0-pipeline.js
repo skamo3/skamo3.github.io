@@ -9,6 +9,7 @@ import GUI from 'three/addons/libs/lil-gui.module.min.js';
 const vertexShader = /* glsl */`
 uniform float uWobble;   // 정점 흔들기 세기 (GUI 슬라이더로 조절)
 uniform float uTime;     // 매 프레임 증가 (애니메이션용)
+uniform float uMVP;      // 1이면 MVP 변환 적용, 0이면 변환 없이 그대로 (GUI 토글)
 varying vec3 vNormal;
 
 void main() {
@@ -24,8 +25,13 @@ void main() {
 
   // ==============================================================
 
-  // MVP 변환 (Ch0 핵심 — 이미 채운 부분)
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+  // MVP 변환 (Ch0 핵심) — 오른쪽에서 왼쪽으로 적용된다: Model → View → Projection
+  // uMVP를 0으로 끄면 변환 없이 로컬 좌표가 그대로 클립 좌표가 된다 (납작한 사각형).
+  if (uMVP > 0.5) {
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+  } else {
+    gl_Position = vec4(p, 1.0);
+  }
 }`;
 
 // [Fragment Shader] 픽셀마다 1번 실행 — "무슨 색으로 칠할지" 결정
@@ -58,7 +64,7 @@ export default {
     const camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 100);
     camera.position.set(2.4, 1.9, 3.3);
 
-    // View 행렬을 마우스로 바꾸는 도구 (카메라를 큐브 주위로 회전)
+    // View 행렬을 마우스로 바꾸는 도구 (큐브가 원점에 있어 회전축도 큐브 중심)
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
@@ -73,6 +79,7 @@ export default {
         uMix:    { value: 0.0 },
         uWobble: { value: 0.0 },
         uTime:   { value: 0.0 },
+        uMVP:    { value: 1.0 },
       },
     });
     const cube = new THREE.Mesh(geometry, material);
@@ -87,9 +94,12 @@ export default {
     scene.add(wire);
 
     // GUI (배선은 완료 — TODO를 채우면 슬라이더가 살아난다)
-    const params = { rotate: false };
+    const params = { rotate: false, useMVP: true };
     const colorProxy = { color: '#22d3ee' };
     const gui = new GUI({ title: 'Ch0' });
+    // MVP를 끄면 변환 없이 로컬 좌표가 그대로 클립 좌표가 된다 → 납작한 사각형
+    gui.add(params, 'useMVP').name('MVP 변환')
+      .onChange(v => { material.uniforms.uMVP.value = v ? 1 : 0; });
     gui.add(params, 'rotate').name('자동 회전');
     gui.add(wire, 'visible').name('와이어프레임');
     const mat = gui.addFolder('Material 파라미터');
