@@ -19,7 +19,10 @@ export const registry = [
     status: 'ready',
     file: 'worlds/ch1-terrain.js',
     lesson: 'chapters/ch1-terrain.lesson.md',
-    posts: [{ title: '지형 + 풀 만들기', url: '/blog/2026/07/30/terrain-grass-instancing/' }],
+    posts: [
+      { title: '지형 + 풀 만들기', url: '/blog/2026/07/30/terrain-grass-instancing/' },
+      { title: '바람 (정점 셰이더)', url: '/blog/2026/07/30/vertex-shader-wind/' },
+    ],
     load: () => import('./ch1-terrain.js'),
   },
 

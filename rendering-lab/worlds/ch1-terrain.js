@@ -58,6 +58,27 @@ function jFbm(x, y){
   return v;
 }
 
+// [개념3] 풀 정점 셰이더 — 시간에 따라 블레이드를 곡선으로 물결치게 (Vertex Shader Animation)
+const grassVertex = /* glsl */`
+uniform float uTime;
+uniform float uWind;
+uniform float uCurve;   // 정지 상태에서 끝이 휘어 있는 정도
+void main() {
+  vec3 instPos = instanceMatrix[3].xyz;                              // 이 풀의 월드 위치
+  float phase = uTime * 1.5 + instPos.x * 0.4 + instPos.z * 0.4;     // 풀마다 다른 위상
+
+  vec3 p = position;
+  float h = position.y / 2.0;          // 높이 0~1로 정규화 (블레이드 높이 2.0)
+  float bend = h * h;                  // 비선형 → 직선이 아닌 곡선 (위로 갈수록 급격히)
+  float wave = sin(phase - h * 1.5);   // 위로 갈수록 위상 지연 → 밑동이 먼저, 끝이 관성으로 따라옴
+
+  p.x += (uCurve + wave * uWind) * bend;   // 정지 곡률 + 바람 물결, 둘 다 끝일수록 크게
+  gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(p, 1.0);
+}`;
+
+const grassFragment = /* glsl */`
+void main() { gl_FragColor = vec4(0.29, 0.616, 0.29, 1.0); }`;
+
 export default {
   async create({ renderer, canvas }) {
     const scene = new THREE.Scene();
@@ -74,7 +95,7 @@ export default {
     controls.autoRotateSpeed = 0.6;
     controls.target.set(0, 1, 0);
 
-    const params = { uAmp: 2.0, uFreq: 0.25 };
+    const params = { uAmp: 2.0, uFreq: 0.25, windOn: true, windStrength: 0.3, curve: 0.15 };
 
     // ── 개념1: 지형 (CPU 변위) ──
     const geometry = new THREE.PlaneGeometry(SIZE, SIZE, SEG, SEG);
@@ -116,9 +137,26 @@ export default {
 
     // ── 개념2: Mesh 인스턴싱 (풀 표현) ──
     const COUNT = 4000;
-    const bladeGeo = new THREE.ConeGeometry(0.05, 0.5, 4);
-    bladeGeo.translate(0, 0.25, 0);
-    const bladeMat = new THREE.MeshBasicMaterial({ color: 0x4a9d4a });
+    // 납작한 잎사귀 모양 (콘 대신) — 높이 세그먼트 8로 곡선 가능, 위로 갈수록 좁아져 끝이 뾰족
+    const bladeGeo = new THREE.PlaneGeometry(0.12, 2.0, 1, 8);
+    {
+      const bp = bladeGeo.attributes.position;
+      for (let i = 0; i < bp.count; i++) {
+        const t = (bp.getY(i) + 1) / 2;            // 0(밑동)~1(끝)
+        bp.setX(i, bp.getX(i) * (1 - t * 0.85));   // 위로 갈수록 좁아짐
+      }
+    }
+    bladeGeo.translate(0, 1.0, 0);                 // 밑동을 원점에
+    const bladeMat = new THREE.ShaderMaterial({
+      vertexShader: grassVertex,
+      fragmentShader: grassFragment,
+      uniforms: {
+        uTime: { value: 0 },
+        uWind: { value: params.windStrength },   // 바람 세기 (0이면 정지)
+        uCurve: { value: params.curve },         // 정지 시 휘어짐
+      },
+      side: THREE.DoubleSide,                     // 납작한 잎이라 양면 다 보이게
+    });
     const grass = new THREE.InstancedMesh(bladeGeo, bladeMat, COUNT);
     grass.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     grass.frustumCulled = false;
@@ -155,12 +193,17 @@ export default {
     gui.add(params, 'uFreq', 0.05, 0.6, 0.01).name('굴곡 (uFreq)').onChange(rebuild);
     gui.add(material, 'wireframe').name('지형 와이어프레임');
     gui.add(grass, 'visible').name('풀 표시');
+    const applyWind = () => { bladeMat.uniforms.uWind.value = params.windOn ? params.windStrength : 0; };
+    gui.add(params, 'windOn').name('바람').onChange(applyWind);
+    gui.add(params, 'windStrength', 0, 0.8, 0.01).name('바람 세기').onChange(applyWind);
+    gui.add(params, 'curve', 0, 0.5, 0.01).name('휘어짐').onChange(v => { bladeMat.uniforms.uCurve.value = v; });
     gui.add(controls, 'autoRotate').name('자동 회전');
 
     return {
       scene,
       camera,
-      update() {
+      update(dt) {
+        bladeMat.uniforms.uTime.value += dt;   // 매 프레임 시간 누적 (GPU가 흔든다)
         controls.update();
       },
       dispose() {
