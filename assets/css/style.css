@@ -11,6 +11,17 @@
   --accent-dark: #073B1E;
   --accent2: #FFD400;
   --accent2-dark: #332600;
+  --inline-code-fg: #FF6B6B;
+  --inline-code-bg: #3A1414;
+  --syn-comment: #7A9F72;
+  --syn-keyword: #569CD6;
+  --syn-type: #4EC9B0;
+  --syn-string: #CE9178;
+  --syn-number: #B5CEA8;
+  --syn-func: #DCDCAA;
+  --syn-prep: #C586C0;
+  --syn-var: #9CDCFE;
+  --font-mono: "Cascadia Code", "D2Coding", Consolas, Menlo, monospace;
 }
 
 [data-theme="light"] {
@@ -24,6 +35,16 @@
   --accent-dark: #E8FBF0;
   --accent2: #A67C00;
   --accent2-dark: #FFF9E0;
+  --inline-code-fg: #C62828;
+  --inline-code-bg: #FBE7E7;
+  --syn-comment: #008000;
+  --syn-keyword: #0000FF;
+  --syn-type: #267F99;
+  --syn-string: #A31515;
+  --syn-number: #098658;
+  --syn-func: #795E26;
+  --syn-prep: #AF00DB;
+  --syn-var: #001080;
 }
 
 * { box-sizing: border-box; }
@@ -518,7 +539,26 @@ a { color: inherit; text-decoration: none; }
 }
 .post-content code { font-family: var(--font-mono, monospace); font-size: 14px; }
 .post-content pre code { font-size: 14px; }
+.post-content code.highlighter-rouge {
+  color: var(--inline-code-fg);
+  background: var(--inline-code-bg);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+}
 .post-content a { color: var(--accent); }
+
+/* rouge syntax highlighting for fenced code blocks */
+.post-content .highlight .c, .post-content .highlight .c1, .post-content .highlight .cm { color: var(--syn-comment); }
+.post-content .highlight .cp { color: var(--syn-prep); }
+.post-content .highlight .k, .post-content .highlight .kd, .post-content .highlight .kr, .post-content .highlight .kn, .post-content .highlight .kt { color: var(--syn-keyword); }
+.post-content .highlight .nc, .post-content .highlight .nn { color: var(--syn-type); }
+.post-content .highlight .nf { color: var(--syn-func); }
+.post-content .highlight .s, .post-content .highlight .s1, .post-content .highlight .s2, .post-content .highlight .sc { color: var(--syn-string); }
+.post-content .highlight .m, .post-content .highlight .mi, .post-content .highlight .mf, .post-content .highlight .mh { color: var(--syn-number); }
+.post-content .highlight .o, .post-content .highlight .p { color: var(--text-muted); }
+.post-content .highlight .n { color: var(--syn-var); }
+.post-content .highlight .n.syn-type { color: var(--syn-type); }
+.post-content .highlight .n.syn-func { color: var(--syn-func); }
 .post-content pre.code-collapsible { position: relative; cursor: pointer; transition: max-height 0.25s ease; }
 .post-content pre.code-collapsible.is-collapsed { max-height: 200px; overflow: hidden; }
 .post-content pre.code-collapsible.is-collapsed::after {
