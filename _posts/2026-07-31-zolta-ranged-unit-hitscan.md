@@ -98,9 +98,3 @@ Panner의 Time에 Particle Relative Time을 연결해서 고쳤다. 이 노드�
 연출도 `UZoltaRangedAttackGameplayCue`를 추상 기반으로 뒀다. Beam과 Impact ParticleSystem은 파생 Blueprint에서 바꾸므로, 같은 히트스캔 판정을 유지하면서 마법탄이나 다른 진영의 시각 효과를 별도로 만들 수 있다.
 
 실제 비행체가 필요한 공격은 다른 계층에 둔다. `AZoltaProjectileBase`는 충돌, 이동, 피해 원본을 관리하는 별도 기반 Actor이며, 일반 원거리 미니언에는 쓰지 않는다. 곡사포, 대포, Siege처럼 탄도와 도착 시간이 게임 규칙인 유닛을 추가할 때 이 기반을 사용한다.
-
-## 현재 확인한 범위
-
-UHT와 `Zolta Win64 Development -NoLink` 컴파일을 통과했고, 위 PIE 영상에서 기본 발사와 Beam·Impact 연출을 확인했다.
-
-다만 벽이나 구조물 뒤 Target에 대한 Miss와 Beam 종점 처리, `State.Dodging` 회피 Miss는 아직 별도 테스트하지 않았다. 원거리 Blueprint와 팀별 SpawnEntries 구성 전체, 멀티플레이 동작도 다음 검증 단계에서 확인할 예정이다.
