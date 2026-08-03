@@ -89,6 +89,12 @@ Blackboard Target
 
 Emitter Duration을 Particle Lifetime(0.1)보다 짧은 0.09로 잡고, Always On을 꺼서 해결했다. Duration이 Lifetime보다 길거나 Always On이 켜져 있으면 파티클이 아직 살아있는 동안 Emitter가 다음 파티클을 또 만들어내서, 한 번의 공격에 Beam이 겹쳐 보였던 것이다. Material과 GameplayCue 구조는 처음부터 문제가 없었고, Emitter 설정값만 잘못 잡혀 있던 것뿐이었다.
 
+![Particle Lifetime — Distribution Float Constant 0.1](/assets/images/zolta/emitter-lifetime-setting.png)
+
+![Emitter Duration — Emitter Loops 1, Emitter Duration 0.09로 Lifetime보다 짧게 설정](/assets/images/zolta/emitter-duration-setting.png)
+
+![Always On 체크 해제](/assets/images/zolta/emitter-always-on-setting.png)
+
 보이는 증상만 보고 Material부터 의심하다 보니 불필요한 수정이 늘었다. 다음에 이펙트 문제가 생기면 Material을 고치기 전에 Emitter의 생성 횟수·주기·수명부터 먼저 확인하기로 했다.
 
 ## 유닛 종류 별 확장 계층 구조
