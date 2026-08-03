@@ -87,7 +87,7 @@ Blackboard Target
 
 그런데 이렇게 고쳐도 증상은 그대로였다. 별도의 이동형 GameplayCue까지 검토하다가, 애초에 원인을 잘못 짚고 있었다는 걸 깨달았다. 실제 원인은 Material이 아니라 파티클 Emitter의 생성 주기였다. Emitter가 의도한 것보다 짧은 주기로 반복 생성되면서, 한 번의 공격이 여러 발처럼 보이고 있었던 것이다.
 
-Emitter 생성 주기를 한 번의 공격 연출 길이에 맞게 조정하니 바로 해결됐다. Material과 GameplayCue 구조는 처음부터 문제가 없었고, 시각 효과가 반복 생성되는 주기만 잘못 잡혀 있던 것뿐이었다.
+Emitter Duration을 Particle Lifetime(0.1)보다 짧은 0.09로 잡고, Always On을 꺼서 해결했다. Duration이 Lifetime보다 길거나 Always On이 켜져 있으면 파티클이 아직 살아있는 동안 Emitter가 다음 파티클을 또 만들어내서, 한 번의 공격에 Beam이 겹쳐 보였던 것이다. Material과 GameplayCue 구조는 처음부터 문제가 없었고, Emitter 설정값만 잘못 잡혀 있던 것뿐이었다.
 
 보이는 증상만 보고 Material부터 의심하다 보니 불필요한 수정이 늘었다. 다음에 이펙트 문제가 생기면 Material을 고치기 전에 Emitter의 생성 횟수·주기·수명부터 먼저 확인하기로 했다.
 
