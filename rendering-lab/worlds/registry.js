@@ -26,8 +26,29 @@ export const registry = [
     load: () => import('./ch1-terrain.js'),
   },
 
+  {
+    id: 'ch2',
+    chapter: 'Ch2 · 빛과 재질',
+    title: '개념1 · 기본 조명 + 법선 보정',
+    status: 'ready',
+    file: 'worlds/ch2-lighting.js',
+    lesson: 'chapters/ch2-lighting.lesson.md',
+    posts: [{ title: '법선 벡터가 조명 계산에 왜 필요한가', url: '/blog/2026/08/03/normal-vector-lighting/' }],
+    load: () => import('./ch2-lighting.js'),
+  },
+
+  {
+    id: 'ch2-pbr',
+    chapter: 'Ch2 · 빛과 재질',
+    title: '개념2 · 쉐이딩 모델 비교(Lambert·Phong·PBR)',
+    status: 'ready',
+    file: 'worlds/ch2-pbr.js',
+    lesson: 'chapters/ch2-pbr.lesson.md',
+    posts: [],
+    load: () => import('./ch2-pbr.js'),
+  },
+
   // 아래는 커리큘럼 예고 (완성 시 status:'ready' + load 연결)
-  { id: 'ch2', chapter: 'Ch2 · 빛과 재질',       title: 'PBR · 조명',            status: 'soon' },
   { id: 'ch3', chapter: 'Ch3 · 렌더링 아키텍처',  title: 'Deferred · G-buffer',   status: 'soon' },
   { id: 'ch4', chapter: 'Ch4 · 환경과 반사',      title: '물 · 반사 · 파티클',     status: 'soon' },
   { id: 'ch5', chapter: 'Ch5 · 후처리',          title: 'Tonemap · Bloom · AA',  status: 'soon' },
