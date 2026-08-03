@@ -79,17 +79,17 @@ Blackboard Target
   브라우저가 동영상 재생을 지원하지 않습니다.
 </video>
 
-원인은 판정 로직이 아니라 Beam Material에 있었다. Beam이 쓰는 Material은 원래 일자형 레이저 텍스처인데, 여기에 마스크를 씌워 Panner로 흘려보내는 방식으로 Muzzle에서 종점까지 탄알이 날아가는 것처럼 보이게 만든다. TexCoord → Panner → Texture Sample 체인을 Speed X -7.4, -6.4, -4.8로 세 겹 겹치고, Add와 Lerp로 합쳐서 최종 색을 낸다.
+처음엔 Beam Material의 Panner Time이나 마스크가 흘러가는 방식이 원인이라고 보고 Material 입력을 고쳤다. TexCoord → Panner → Texture Sample 체인 세 겹이 각자 다른 Speed로 마스크를 흘려보내는 구조인데, Panner의 Time을 게임 전체 시간이 아니라 파티클 자신의 수명에 맞추면 나아지지 않을까 싶어서 Particle Relative Time을 연결해봤다.
 
-![기존 Beam Material — TexCoord/Panner/Texture Sample 세 겹을 Add와 Lerp로 합치는 구조. Panner의 Time 입력은 따로 연결돼 있지 않다](/assets/images/zolta/beam-panner-material-before.png)
+![기존 Beam Material — TexCoord/Panner/Texture Sample 세 겹을 Add와 Lerp로 합치는 구조](/assets/images/zolta/beam-panner-material-before.png)
 
-그런데 각 Panner의 Time 입력을 따로 연결해두지 않아서, 마스크가 파티클 개별 수명이 아니라 게임 전체 시간을 기준으로 계속 흘러가고 있었다. Panner 속도와 텍스처 타일링 주기가 파티클 하나가 떠 있는 시간보다 짧다 보니, 같은 파티클 안에서 마스크가 두 번 지나가면서 Beam이 두 번 발사된 것처럼 보이는 것이었다.
+![Panner의 Time 입력에 Particle Relative Time을 연결해본 구조](/assets/images/zolta/beam-panner-material-relative-time.png)
 
-Panner의 Time에 Particle Relative Time을 연결해서 고쳤다. 이 노드는 파티클마다 스폰 시점을 0으로 다시 잡아주기 때문에, 마스크가 게임 시간이 아니라 그 파티클 자신의 수명 기준으로 한 번만 흘러가게 된다.
+이걸로 증상이 조금 누그러지긴 했지만 완전히 없어지지는 않았고, 별도의 이동형 GameplayCue까지 검토하다가 원인을 잘못 짚고 있다는 걸 깨달았다. 실제 원인은 Material이 아니라 파티클 Emitter의 생성 주기였다. Emitter가 의도한 것보다 짧은 주기로 반복 생성되면서, 한 번의 공격이 여러 발처럼 보이고 있었다.
 
-![Panner의 Time 입력에 Particle Relative Time을 연결한 구조 — 마스크가 파티클 수명 기준으로 한 번만 흐른다](/assets/images/zolta/beam-panner-material-relative-time.png)
+Emitter 생성 주기를 한 번의 공격 연출 길이에 맞게 조정하니 바로 해결됐다. Material과 GameplayCue 구조는 원래부터 문제가 없었고, 시각 효과가 반복 생성되는 주기만 잘못 잡혀 있던 것이었다.
 
-이후로는 원거리 공격 한 번에 Beam도 한 번만 반짝인다.
+보이는 증상만 보고 Material부터 의심하다 보니 불필요한 수정이 늘었다. 다음에 이펙트 문제가 생기면 Material을 고치기 전에 Emitter의 생성 횟수·주기·수명부터 먼저 확인하기로 했다.
 
 ## 유닛 종류 별 확장 계층 구조
 
