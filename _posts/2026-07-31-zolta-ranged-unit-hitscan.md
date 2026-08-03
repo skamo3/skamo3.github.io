@@ -85,9 +85,9 @@ Blackboard Target
 
 ![Panner의 Time 입력에 Particle Relative Time을 연결해본 구조](/assets/images/zolta/beam-panner-material-relative-time.png)
 
-이걸로 증상이 조금 누그러지긴 했지만 완전히 없어지지는 않았고, 별도의 이동형 GameplayCue까지 검토하다가 원인을 잘못 짚고 있다는 걸 깨달았다. 실제 원인은 Material이 아니라 파티클 Emitter의 생성 주기였다. Emitter가 의도한 것보다 짧은 주기로 반복 생성되면서, 한 번의 공격이 여러 발처럼 보이고 있었다.
+그런데 이렇게 고쳐도 증상은 그대로였다. 별도의 이동형 GameplayCue까지 검토하다가, 애초에 원인을 잘못 짚고 있었다는 걸 깨달았다. 실제 원인은 Material이 아니라 파티클 Emitter의 생성 주기였다. Emitter가 의도한 것보다 짧은 주기로 반복 생성되면서, 한 번의 공격이 여러 발처럼 보이고 있었던 것이다.
 
-Emitter 생성 주기를 한 번의 공격 연출 길이에 맞게 조정하니 바로 해결됐다. Material과 GameplayCue 구조는 원래부터 문제가 없었고, 시각 효과가 반복 생성되는 주기만 잘못 잡혀 있던 것이었다.
+Emitter 생성 주기를 한 번의 공격 연출 길이에 맞게 조정하니 바로 해결됐다. Material과 GameplayCue 구조는 처음부터 문제가 없었고, 시각 효과가 반복 생성되는 주기만 잘못 잡혀 있던 것뿐이었다.
 
 보이는 증상만 보고 Material부터 의심하다 보니 불필요한 수정이 늘었다. 다음에 이펙트 문제가 생기면 Material을 고치기 전에 Emitter의 생성 횟수·주기·수명부터 먼저 확인하기로 했다.
 
