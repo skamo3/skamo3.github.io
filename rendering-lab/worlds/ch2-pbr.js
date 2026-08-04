@@ -63,7 +63,7 @@ void main() {
   // R과 V가 가까울수록(시야가 반사 방향에 가까울수록) 밝은 하이라이트가 생긴다.
   // dot(R,V)를 0 이상으로 자르고, uShininess 제곱해서 뾰족한 하이라이트로 만든다.
   // 힌트: pow(x, uShininess)
-  float specular = 0.0;   // ← 이 줄을 고치세요 (정답: lesson.md)
+  float specular = pow(max(dot(R, V), 0.0), uShininess);   // ← 이 줄을 고치세요 (정답: lesson.md)
   // ==================================================================
 
   vec3 color = uBaseColor * (uAmbient + diffuse * uLightColor) + specular * uSpecularColor * uLightColor;
@@ -150,15 +150,20 @@ function groundAndPlace(obj, scale, extraY, rotYDeg, baseX, baseZ) {
   obj.position.set(baseX, groundShift + extraY, baseZ);
 }
 
+function disposeMaterial(m) {
+  for (const key in m) { const v = m[key]; if (v && v.isTexture) v.dispose(); }
+  m.dispose();
+}
 function disposeObject3D(root) {
   root.traverse(obj => {
     if (obj.geometry) obj.geometry.dispose();
-    if (obj.material) {
+    // 쉐이딩 모델 3벌을 만들어둔 메시는 현재 활성화된 것 말고 나머지 둘도 같이 정리해야 한다.
+    if (obj.userData && obj.userData.shadingMats) {
+      const { lambert, phong, pbr } = obj.userData.shadingMats;
+      [lambert, phong, pbr].forEach(disposeMaterial);
+    } else if (obj.material) {
       const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-      for (const m of mats) {
-        for (const key in m) { const v = m[key]; if (v && v.isTexture) v.dispose(); }
-        m.dispose();
-      }
+      mats.forEach(disposeMaterial);
     }
   });
 }
@@ -184,8 +189,8 @@ export default {
       elevation: 45, azimuth: 35, ambient: 0.15,
       shadingModel: 'lambert',
       shininess: 32, metallic: 0.0, roughness: 0.4,
-      helmetVisible: true, helmetScale: 1.2, helmetY: 0, helmetRotY: 0,
-      knightVisible: true, knightScale: 1.0, knightY: 0, knightRotY: 0,
+      helmetScale: 1.2, helmetY: 0, helmetRotY: 0,
+      knightScale: 1.0, knightY: 0, knightRotY: 0,
     };
     const colorProxy = { baseColor: '#c9c9d1', specularColor: '#ffffff' };
 
@@ -196,11 +201,18 @@ export default {
     const uBaseColor = { value: new THREE.Color(colorProxy.baseColor) };
     const uCameraPos = { value: camera.position.clone() };
 
-    // ── 무대 바닥 (표준 재질 — 그림자를 직접 받을 수 있다) ──
-    const floor = new THREE.Mesh(
-      new THREE.CircleGeometry(6.5, 64),
-      new THREE.MeshStandardMaterial({ color: 0x1c2130, roughness: 0.9, metalness: 0.0 })
-    );
+    // ── 무대 바닥 ──
+    // 구슬은 우리가 손으로 짠 커스텀 셰이더로 쉐이딩 모델을 바꾸지만, 바닥·glTF 모델은
+    // three.js에 내장된 동명의 재질(Lambert/Phong/Standard)로 갈아끼운다. 이름이 우리가
+    // 만든 세 모델과 그대로 대응된다 — 직접 만든 게 실제 엔진 내장 재질과 같은 것임을 보여준다.
+    const floorGeo = new THREE.CircleGeometry(6.5, 64);
+    const floorColor = 0x1c2130;
+    const floorMaterials = {
+      lambert: new THREE.MeshLambertMaterial({ color: floorColor }),
+      phong: new THREE.MeshPhongMaterial({ color: floorColor, shininess: 30 }),
+      pbr: new THREE.MeshStandardMaterial({ color: floorColor, roughness: 0.9, metalness: 0.0 }),
+    };
+    const floor = new THREE.Mesh(floorGeo, floorMaterials[params.shadingModel]);
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     scene.add(floor);
@@ -268,7 +280,21 @@ export default {
     sphere.castShadow = true;               // 커스텀 셰이더라도 그림자 캐스팅(깊이만 필요)은 그대로 동작
     scene.add(sphere);
 
-    // ── glTF 레퍼런스 모델 두 개 (자체 PBR 재질 그대로) ──
+    // glTF가 원래 갖고 온 PBR 재질(MeshStandardMaterial)에서 map/normalMap 등 텍스처를 그대로
+    // 물려받아 Lambert·Phong 버전을 만든다. 텍스처는 유지하되 반사 계산 방식만 바뀐다.
+    function buildShadingVariants(orig) {
+      const shared = { map: orig.map || null, color: orig.color ? orig.color.clone() : new THREE.Color(0xffffff) };
+      if (orig.normalMap) shared.normalMap = orig.normalMap;
+      if (orig.emissiveMap) shared.emissiveMap = orig.emissiveMap;
+      if (orig.emissive) shared.emissive = orig.emissive.clone();
+      return {
+        lambert: new THREE.MeshLambertMaterial(shared),
+        phong: new THREE.MeshPhongMaterial({ ...shared, shininess: 30 }),
+        pbr: orig,   // 원본 그대로 — 실제 프로덕션 PBR 참고 자료
+      };
+    }
+
+    // ── glTF 레퍼런스 모델 두 개 ──
     const gltfLoader = new GLTFLoader();
     let helmet = null, knight = null;
     try {
@@ -279,7 +305,12 @@ export default {
       helmet = helmetGltf.scene;
       knight = knightGltf.scene;
       for (const obj of [helmet, knight]) {
-        obj.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+        obj.traverse(c => {
+          if (!c.isMesh) return;
+          c.castShadow = true;
+          c.receiveShadow = true;
+          c.userData.shadingMats = buildShadingVariants(c.material);
+        });
       }
       groundAndPlace(helmet, params.helmetScale, params.helmetY, params.helmetRotY, 0.4, -0.6);
       groundAndPlace(knight, params.knightScale, params.knightY, params.knightRotY, 2.8, 0.6);
@@ -297,13 +328,19 @@ export default {
     lightF.add(params, 'ambient', 0, 0.6, 0.01).name('환경광 세기')
       .onChange(v => { uAmbient.value = v; });
 
-    const materialF = gui.addFolder('재질 — 구슬 (쉐이딩 모델 비교)');
+    const materialF = gui.addFolder('쉐이딩 모델 (장면 전체에 적용)');
 
     function toggleFolder(folder, visible) {
       folder.domElement.style.display = visible ? '' : 'none';
     }
+    // 드롭다운 하나로 구슬(커스텀 셰이더) + 바닥 + 레퍼런스 모델 전부의 재질을 갈아끼운다.
     function applyShadingModel(model) {
       sphere.material = sphereMaterials[model];
+      floor.material = floorMaterials[model];
+      for (const obj of [helmet, knight]) {
+        if (!obj) continue;
+        obj.traverse(c => { if (c.isMesh && c.userData.shadingMats) c.material = c.userData.shadingMats[model]; });
+      }
       toggleFolder(phongF, model === 'phong');
       toggleFolder(pbrF, model === 'pbr');
     }
@@ -312,16 +349,16 @@ export default {
       .name('쉐이딩 모델')
       .onChange(applyShadingModel);
 
-    materialF.addColor(colorProxy, 'baseColor').name('베이스 컬러')
+    materialF.addColor(colorProxy, 'baseColor').name('베이스 컬러 (구슬)')
       .onChange(v => { uBaseColor.value.set(v); });
 
-    const phongF = materialF.addFolder('Phong 옵션');
+    const phongF = materialF.addFolder('Phong 옵션 (구슬)');
     phongF.add(params, 'shininess', 2, 256, 1).name('Shininess')
       .onChange(v => { spherePhongMat.uniforms.uShininess.value = v; });
     phongF.addColor(colorProxy, 'specularColor').name('Specular 색')
       .onChange(v => { spherePhongMat.uniforms.uSpecularColor.value.set(v); });
 
-    const pbrF = materialF.addFolder('PBR 옵션');
+    const pbrF = materialF.addFolder('PBR 옵션 (구슬)');
     pbrF.add(params, 'metallic', 0, 1, 0.01).name('금속성 (Metallic)')
       .onChange(v => { spherePbrMat.uniforms.uMetallic.value = v; });
     pbrF.add(params, 'roughness', 0.02, 1, 0.01).name('거칠기 (Roughness)')
@@ -329,24 +366,8 @@ export default {
 
     applyShadingModel(params.shadingModel);
 
-    const refF = gui.addFolder('레퍼런스 모델 (glTF, 실제 그림자)');
-    const helmetF = refF.addFolder('데미지 헬멧 (Khronos 샘플)');
-    helmetF.add(params, 'helmetVisible').name('표시').onChange(v => { if (helmet) helmet.visible = v; });
-    helmetF.add(params, 'helmetScale', 0.1, 5, 0.05).name('크기')
-      .onChange(v => groundAndPlace(helmet, v, params.helmetY, params.helmetRotY, 0.4, -0.6));
-    helmetF.add(params, 'helmetY', -1, 2, 0.05).name('추가 높이')
-      .onChange(v => groundAndPlace(helmet, params.helmetScale, v, params.helmetRotY, 0.4, -0.6));
-    helmetF.add(params, 'helmetRotY', 0, 360, 1).name('회전')
-      .onChange(v => groundAndPlace(helmet, params.helmetScale, params.helmetY, v, 0.4, -0.6));
-
-    const knightF = refF.addFolder('나이트 (내 모델)');
-    knightF.add(params, 'knightVisible').name('표시').onChange(v => { if (knight) knight.visible = v; });
-    knightF.add(params, 'knightScale', 0.01, 5, 0.01).name('크기')
-      .onChange(v => groundAndPlace(knight, v, params.knightY, params.knightRotY, 2.8, 0.6));
-    knightF.add(params, 'knightY', -1, 2, 0.05).name('추가 높이')
-      .onChange(v => groundAndPlace(knight, params.knightScale, v, params.knightRotY, 2.8, 0.6));
-    knightF.add(params, 'knightRotY', 0, 360, 1).name('회전')
-      .onChange(v => groundAndPlace(knight, params.knightScale, params.knightY, v, 2.8, 0.6));
+    // 레퍼런스 모델(헬멧·나이트)은 항상 고정 스폰 — 튜닝용 GUI는 노출하지 않는다.
+    // 배치값은 위 groundAndPlace(...) 호출의 기본 파라미터로 고정돼 있다.
 
     gui.add(controls, 'autoRotate').name('자동 회전');
 
@@ -358,8 +379,10 @@ export default {
         uCameraPos.value.copy(camera.position);
       },
       dispose() {
-        floor.geometry.dispose();
-        floor.material.dispose();
+        floorGeo.dispose();
+        floorMaterials.lambert.dispose();
+        floorMaterials.phong.dispose();
+        floorMaterials.pbr.dispose();
         sphereGeo.dispose();
         sphereLambertMat.dispose();
         spherePhongMat.dispose();
