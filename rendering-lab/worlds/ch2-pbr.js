@@ -79,6 +79,7 @@ uniform vec3 uBaseColor;
 uniform float uMetallic;
 uniform float uRoughness;
 uniform vec3 uCameraPos;
+uniform samplerCube uEnvMap;   // 구슬 위치에서 실시간으로 찍은 주변(바닥·헬멧·나이트) 큐브맵
 varying vec3 vNormal;
 varying vec3 vWorldPos;
 
@@ -91,7 +92,7 @@ float D_GGX(vec3 N, vec3 H, float roughness) {
   float NdotH = max(dot(N, H), 0.0);
   float NdotH2 = NdotH * NdotH;
   float denom = (NdotH2 * (a2 - 1.0) + 1.0);
-  return a2 / (PI * denom * denom + 0.0001);
+  return a2 / (PI * denom * denom + 0.00000000000001);
 }
 
 // 제공됨: 기하 함수(Smith-Schlick-GGX) — 미세면끼리 서로 가리는 정도를 보정
@@ -121,7 +122,7 @@ void main() {
   // 시야각이 가장자리(grazing angle)로 갈수록 반사가 커지는 효과.
   // F0에서 시작해 (1-F0)를 (1 - dot(H,V))^5 만큼 더한다.
   // 힌트: pow(x, 5.0)
-  vec3 F = F0;   // ← 이 줄을 고치세요 (정답: lesson.md)
+  vec3 F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);   // ← 이 줄을 고치세요 (정답: lesson.md)
   // ==================================================================
 
   float D = D_GGX(N, H, uRoughness);
@@ -131,8 +132,17 @@ void main() {
   // === TODO (에너지 보존 합성) =========================================
   // kS(반사로 나가는 비율) = F. kD(diffuse로 남는 비율) = (1-kS) * (금속이 아닌 비율).
   // 최종 색 = (diffuse + specular) * 빛 * NdotL + ambient
-  vec3 color = uBaseColor * uAmbient;   // ← 이 줄을 고치세요 (정답: lesson.md)
+  vec3 kS = F;
+  vec3 kD = (1.0 - kS) * (1.0 - uMetallic);
+  vec3 diffuse = kD * uBaseColor / PI;
+  vec3 color = (diffuse + specular) * uLightColor * NdotL + uAmbient * uBaseColor;   // ← 이 줄을 고치세요 (정답: lesson.md)
   // ==================================================================
+
+  // 주변(바닥·헬멧·나이트)을 비추는 반사 — 정반사 방향(R)으로 큐브맵을 샘플링하고,
+  // F(Fresnel)로 가중치를 준다. 금속(F 큼)일수록, 가장자리(F 큼)일수록 반사가 강하게 보인다.
+  vec3 R = reflect(-V, N);
+  vec3 envColor = textureCube(uEnvMap, R).rgb;
+  color += envColor * F;
 
   gl_FragColor = vec4(color, 1.0);
 }`;
@@ -186,8 +196,8 @@ export default {
     controls.target.set(0, 1, 0);
 
     const params = {
-      elevation: 45, azimuth: 35, ambient: 0.15,
-      shadingModel: 'lambert',
+      elevation: 45, azimuth: 35, ambient: 0.15, lightAutoRotate: false,
+      shadingModel: 'pbr',
       shininess: 32, metallic: 0.0, roughness: 0.4,
       helmetScale: 1.2, helmetY: 0, helmetRotY: 0,
       knightScale: 1.0, knightY: 0, knightRotY: 0,
@@ -209,7 +219,9 @@ export default {
     const floorColor = 0x1c2130;
     const floorMaterials = {
       lambert: new THREE.MeshLambertMaterial({ color: floorColor }),
-      phong: new THREE.MeshPhongMaterial({ color: floorColor, shininess: 30 }),
+      // MeshPhongMaterial의 specular 기본값은 거의 검정(0x111111)이라 명시하지 않으면
+      // 하이라이트가 계산은 되어도 눈에 안 보인다. 구슬(커스텀 셰이더)과 맞춰 흰색으로 지정한다.
+      phong: new THREE.MeshPhongMaterial({ color: floorColor, shininess: params.shininess, specular: 0xffffff }),
       pbr: new THREE.MeshStandardMaterial({ color: floorColor, roughness: 0.9, metalness: 0.0 }),
     };
     const floor = new THREE.Mesh(floorGeo, floorMaterials[params.shadingModel]);
@@ -264,6 +276,14 @@ export default {
         uSpecularColor: { value: new THREE.Color(colorProxy.specularColor) },
       },
     });
+    // 구슬 위치에서 주변(바닥·헬멧·나이트)을 실시간으로 찍어두는 큐브맵 — 별도 환경맵 이미지 없이
+    // "지금 이 씬 안에 있는 것들"만 반사하면 되므로, 매 프레임 구슬 자리에서 6방향을 렌더링한다.
+    const envRT = new THREE.WebGLCubeRenderTarget(256, {
+      generateMipmaps: true,
+      minFilter: THREE.LinearMipmapLinearFilter,
+    });
+    const envCamera = new THREE.CubeCamera(0.1, 50, envRT);
+
     const spherePbrMat = new THREE.ShaderMaterial({
       vertexShader: sphereVertex,
       fragmentShader: spherePbrFragment,
@@ -271,12 +291,13 @@ export default {
         uLightDir, uLightColor, uAmbient, uBaseColor, uCameraPos,
         uMetallic: { value: params.metallic },
         uRoughness: { value: params.roughness },
+        uEnvMap: { value: envRT.texture },
       },
     });
     const sphereMaterials = { lambert: sphereLambertMat, phong: spherePhongMat, pbr: spherePbrMat };
 
     const sphere = new THREE.Mesh(sphereGeo, sphereMaterials[params.shadingModel]);
-    sphere.position.set(-2.6, 0.9, 0.8);   // 구슬 반지름만큼 띄우면 바닥에 정확히 닿는다
+    sphere.position.set(0, 0.9, 0.8);   // 구슬 반지름만큼 띄우면 바닥에 정확히 닿는다
     sphere.castShadow = true;               // 커스텀 셰이더라도 그림자 캐스팅(깊이만 필요)은 그대로 동작
     scene.add(sphere);
 
@@ -289,7 +310,8 @@ export default {
       if (orig.emissive) shared.emissive = orig.emissive.clone();
       return {
         lambert: new THREE.MeshLambertMaterial(shared),
-        phong: new THREE.MeshPhongMaterial({ ...shared, shininess: 30 }),
+        // specular를 명시하지 않으면 기본값(거의 검정)이라 하이라이트가 안 보인다.
+        phong: new THREE.MeshPhongMaterial({ ...shared, shininess: params.shininess, specular: 0xffffff }),
         pbr: orig,   // 원본 그대로 — 실제 프로덕션 PBR 참고 자료
       };
     }
@@ -312,8 +334,8 @@ export default {
           c.userData.shadingMats = buildShadingVariants(c.material);
         });
       }
-      groundAndPlace(helmet, params.helmetScale, params.helmetY, params.helmetRotY, 0.4, -0.6);
-      groundAndPlace(knight, params.knightScale, params.knightY, params.knightRotY, 2.8, 0.6);
+      groundAndPlace(helmet, params.helmetScale, params.helmetY, params.helmetRotY, -2.4, -0.6);
+      groundAndPlace(knight, params.knightScale, params.knightY, params.knightRotY, 2.4, 0.6);
       scene.add(helmet, knight);
     } catch (e) {
       console.error('레퍼런스 모델 로드 실패:', e);
@@ -327,6 +349,7 @@ export default {
     lightF.add(params, 'azimuth', 0, 360, 1).name('빛 방위각').onChange(updateLightDir);
     lightF.add(params, 'ambient', 0, 0.6, 0.01).name('환경광 세기')
       .onChange(v => { uAmbient.value = v; });
+    lightF.add(params, 'lightAutoRotate').name('자동 회전 (광원)');
 
     const materialF = gui.addFolder('쉐이딩 모델 (장면 전체에 적용)');
 
@@ -345,18 +368,30 @@ export default {
       toggleFolder(pbrF, model === 'pbr');
     }
     // 모델 선택 드롭다운을 폴더 맨 위에 둔다 — 무엇을 비교하는 화면인지 먼저 보이도록
-    materialF.add(params, 'shadingModel', { Lambert: 'lambert', Phong: 'phong', PBR: 'pbr' })
+    materialF.add(params, 'shadingModel', { PBR: 'pbr', Phong: 'phong', Lambert: 'lambert' })
       .name('쉐이딩 모델')
       .onChange(applyShadingModel);
 
-    materialF.addColor(colorProxy, 'baseColor').name('베이스 컬러 (구슬)')
-      .onChange(v => { uBaseColor.value.set(v); });
+    // 바닥·헬멧·나이트의 Phong 변형(들)을 순회하며 shininess/specular를 같이 갱신한다.
+    function forEachScenePhongMaterial(fn) {
+      fn(floorMaterials.phong);
+      for (const obj of [helmet, knight]) {
+        if (!obj) continue;
+        obj.traverse(c => { if (c.isMesh && c.userData.shadingMats) fn(c.userData.shadingMats.phong); });
+      }
+    }
 
-    const phongF = materialF.addFolder('Phong 옵션 (구슬)');
+    const phongF = materialF.addFolder('Phong 옵션 (장면 전체)');
     phongF.add(params, 'shininess', 2, 256, 1).name('Shininess')
-      .onChange(v => { spherePhongMat.uniforms.uShininess.value = v; });
+      .onChange(v => {
+        spherePhongMat.uniforms.uShininess.value = v;
+        forEachScenePhongMaterial(m => { m.shininess = v; });
+      });
     phongF.addColor(colorProxy, 'specularColor').name('Specular 색')
-      .onChange(v => { spherePhongMat.uniforms.uSpecularColor.value.set(v); });
+      .onChange(v => {
+        spherePhongMat.uniforms.uSpecularColor.value.set(v);
+        forEachScenePhongMaterial(m => { m.specular.set(v); });
+      });
 
     const pbrF = materialF.addFolder('PBR 옵션 (구슬)');
     pbrF.add(params, 'metallic', 0, 1, 0.01).name('금속성 (Metallic)')
@@ -371,12 +406,37 @@ export default {
 
     gui.add(controls, 'autoRotate').name('자동 회전');
 
+    // 구슬 베이스 컬러: UI 조작 없이 매 프레임 임의의 색을 향해 부드럽게 그라데이션 전환한다.
+    const colorFrom = uBaseColor.value.clone();
+    const colorTo = new THREE.Color().setHSL(Math.random(), 0.6, 0.55);
+    let colorT = 0;
+    const colorCycleDuration = 4; // 한 색에서 다음 색까지 걸리는 시간(초)
+
     return {
       scene,
       camera,
-      update() {
+      update(dt = 0) {
         controls.update();
         uCameraPos.value.copy(camera.position);
+
+        // 구슬 자리에서 주변을 다시 찍어 uEnvMap을 갱신한다. 구슬 스스로를 비추면 안 되니 잠깐 숨긴다.
+        sphere.visible = false;
+        envCamera.position.copy(sphere.position);
+        envCamera.update(renderer, scene);
+        sphere.visible = true;
+
+        if (params.lightAutoRotate) {
+          params.azimuth = (params.azimuth + dt * 15) % 360; // 초당 15도, 24초에 한 바퀴
+          updateLightDir();
+        }
+
+        colorT += dt / colorCycleDuration;
+        if (colorT >= 1) {
+          colorT = 0;
+          colorFrom.copy(colorTo);
+          colorTo.setHSL(Math.random(), 0.5 + Math.random() * 0.4, 0.4 + Math.random() * 0.3);
+        }
+        uBaseColor.value.copy(colorFrom).lerp(colorTo, colorT);
       },
       dispose() {
         floorGeo.dispose();
@@ -387,6 +447,7 @@ export default {
         sphereLambertMat.dispose();
         spherePhongMat.dispose();
         spherePbrMat.dispose();
+        envRT.dispose();
         if (helmet) disposeObject3D(helmet);
         if (knight) disposeObject3D(knight);
         renderer.shadowMap.enabled = false;

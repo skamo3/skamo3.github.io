@@ -44,7 +44,7 @@ export const registry = [
     status: 'ready',
     file: 'worlds/ch2-pbr.js',
     lesson: 'chapters/ch2-pbr.lesson.md',
-    posts: [],
+    posts: [{ title: 'Light Shader 모델의 발전과 PBR', url: '/blog/2026/08/05/lambert-phong-pbr-shading-models/' }],
     load: () => import('./ch2-pbr.js'),
   },
 

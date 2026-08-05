@@ -140,32 +140,6 @@ Phong의 `pow(dot(R,V), shininess)`와 PBR의 `D(H)`는 둘 다 "하이라이트
 - PBR 전용: `uMetallic`, `uRoughness`, 그리고 제공된 `D_GGX()` / `G_Smith()` 함수
 - GUI의 "쉐이딩 모델" 드롭다운(맨 위)을 바꾸면 `sphere.material`을 교체하고, 그 모델에 해당하는 옵션 폴더만 보이게 한다
 
-## 장면 구성 — 스튜디오 무대와 glTF 레퍼런스 모델
-
-구슬만으로는 재질 차이를 보여주는 데 한계가 있어서, **glTF 레퍼런스 모델 두 개**를 함께 놓았다 — Khronos의 공식 PBR 데모 자산인 DamagedHelmet(금속 바이저 + 거친 몸체가 한 메시에 공존)과 사용자가 준비한 나이트 모델이다. 이 둘은 우리가 만든 셰이더로 바꿔치지 않고 **자기 고유의 PBR 재질(MeshStandardMaterial)**을 그대로 쓴다 — 지금까지 배운 이론이 실제 프로덕션에서 어떻게 구현되는지 보여주는 참고 자료다.
-
-무대는 지형이 아니라 작은 원형 바닥(스튜디오 플로어)이다. `MeshStandardMaterial`을 쓰는 표준 재질이라 그림자를 직접 받을 수 있어서, 별도 트릭 없이 `receiveShadow = true`만으로 충분하다. `THREE.DirectionalLight` + `THREE.HemisphereLight`를 두어 모델이 실제 그림자를 드리운다. 구슬은 커스텀 셰이더지만 그림자를 **드리우는** 건 깊이만 있으면 되는 렌더 패스라 재질과 무관하게 동작한다.
-
-### 값진 실수 — glTF 모델은 원점이 발밑이 아니다
-
-처음엔 모델을 `position.y = 0`에 그냥 놓았더니 캐릭터가 반쯤 바닥에 파묻혀 훨씬 작아 보였다. 원인을 glb 파일 자체를 파싱해서 확인했다 — 나이트 모델의 정점 Y 범위가 `-0.95 ~ +0.95`로, **원점이 발밑이 아니라 몸통 중앙**에 있었다. `position.y = 0`으로 두면 발밑이 아니라 몸의 절반이 이미 땅 아래에 있는 것과 같다.
-
-glTF는 익스포트하는 DCC 툴·설정에 따라 원점(pivot)이 발밑, 중심, 심지어 임의의 지점일 수 있다. 그래서 좌표를 그냥 믿지 않고, **로드한 뒤 실제 바운딩 박스를 재서 가장 낮은 점을 바닥에 맞추는** 함수를 만들었다.
-
-```js
-function groundAndPlace(obj, scale, extraY, rotYDeg, baseX, baseZ) {
-  obj.position.set(0, 0, 0);
-  obj.rotation.set(0, rotYDeg * Math.PI / 180, 0);
-  obj.scale.setScalar(scale);
-  obj.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(obj);
-  const groundShift = -box.min.y;   // 지금 가장 낮은 점을 y=0으로 밀어 올리는 데 필요한 양
-  obj.position.set(baseX, groundShift + extraY, baseZ);
-}
-```
-
-`THREE.Box3().setFromObject()`가 현재 스케일·회전이 적용된 상태의 월드 공간 바운딩 박스를 계산해준다. 그 최솟값(`box.min.y`)만큼 끌어올리면 원점이 어디에 있었든 발밑이 정확히 바닥(y=0)에 닿는다. 스케일이나 회전을 바꾸면 바운딩 박스도 바뀌므로, GUI 슬라이더의 `onChange`마다 이 함수를 다시 호출한다.
-
 ## 실습 (직접 채우기)
 
 **Lambert** — 개념1에서 이미 채운 공식을 그대로 재사용한다 (별도 TODO 없음).
@@ -200,7 +174,6 @@ vec3 color = (diffuse + specular) * uLightColor * NdotL + uAmbient * uBaseColor;
 - Phong에서 `shininess`를 낮췄다 높였다 하며 하이라이트가 퍼졌다 좁아지는 걸 본다. `specularColor`를 바꿔 흰 하이라이트가 아닌 색 있는 하이라이트도 만들어본다 (물리적으로 이상한 조합도 가능하다는 걸 직접 확인하는 것)
 - PBR에서 metallic=1일 때와 Phong의 흰 하이라이트를 비교한다 — PBR은 금속색이 반사에 묻어나지만 Phong은 specularColor를 직접 바꾸지 않는 한 항상 같은 색이다
 - 구슬을 비스듬히(가장자리) 봤을 때 PBR만 반사가 밝아지는 것(Fresnel)을 Lambert·Phong과 비교한다
-- 레퍼런스 모델의 "크기"·"회전" 슬라이더를 바꿔보면서, 바뀔 때마다 발이 계속 바닥에 붙어 있는 것을 확인한다 (`groundAndPlace`가 매번 다시 계산해주기 때문)
 
 ## 엔진 매핑
 
@@ -215,4 +188,3 @@ vec3 color = (diffuse + specular) * uLightColor * NdotL + uAmbient * uBaseColor;
 3. Fresnel 효과가 없는 모델(Lambert, Phong)은 실제로 뭐가 어색하게 보이나?
 4. 에너지 보존이 없다는 게 Phong에서 구체적으로 어떤 문제로 이어지나?
 5. 금속성이 1일 때 PBR과 Phong의 결과가 어떻게 다르게 보이나?
-6. glTF 모델의 원점이 발밑이 아닐 수 있다는 걸 몰랐다면, 어떤 증상으로 알아챌 수 있었을까?
