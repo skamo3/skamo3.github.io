@@ -74,8 +74,8 @@ flowchart TD
     W --> L["ULevel"]
     L --> A["AActor"]
     A --> C["UActorComponent"]
-    C --> P["UPROPERTY로 선언된 UObject"]
-    X["아무도 가리키지 않는 UObject"]
+    C --> P["UPROPERTY로 선언된<br/>UObject"]
+    X["아무도 가리키지<br/>않는 UObject"]
 </pre>
 
 월드가 레벨을 갖고, 레벨이 액터를 갖고, 액터가 컴포넌트를 갖는다. 이 소유 사슬이 그대로 GC의 탐색 경로가 된다. 사슬에 닿지 못한 객체가 회수 대상이다.

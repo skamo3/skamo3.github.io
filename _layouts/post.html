@@ -14,6 +14,15 @@ layout: default
 <script type="module">
   import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
   const theme = document.documentElement.getAttribute('data-theme') === 'light' ? 'default' : 'dark';
-  mermaid.initialize({ startOnLoad: true, theme });
+  // 본문과 같은 폰트로 라벨 폭을 재야 한다. 기본값으로 두면 mermaid가 자기 폰트로 재고
+  // 나중에 웹폰트가 적용되면서 글자가 박스를 넘어 잘린다.
+  mermaid.initialize({
+    startOnLoad: false,
+    theme,
+    fontFamily: getComputedStyle(document.body).fontFamily
+  });
+  // 웹폰트 로드가 끝난 뒤에 그린다
+  await document.fonts.ready;
+  await mermaid.run({ querySelector: 'pre.mermaid' });
 </script>
 {% endif %}
