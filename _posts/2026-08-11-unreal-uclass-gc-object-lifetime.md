@@ -88,15 +88,22 @@ flowchart TD
 | 레벨이 액터를 | `TArray<TObjectPtr<AActor>> Actors` | `Engine/Level.h` |
 | 액터가 컴포넌트를 | `TSet<TObjectPtr<UActorComponent>> OwnedComponents` | `GameFramework/Actor.h` |
 
-`UWorld::PersistentLevel`에는 `UPROPERTY`가 붙어 있다. 반면 `ULevel::Actors`와 `AActor::OwnedComponents`에는 붙어 있지 않다. 그렇다고 GC가 못 보는 것은 아니고, 두 클래스 모두 `AddReferencedObjects`를 직접 구현해 참조를 넘긴다. 액터와 컴포넌트는 수가 많고 자주 바뀌어서 엔진이 직접 챙기는 쪽을 택한 것이다.
+`UWorld::PersistentLevel`에는 `UPROPERTY`가 붙어 있다. 반면 `ULevel::Actors`와 `AActor::OwnedComponents`에는 붙어 있지 않다. 그렇다고 GC가 못 보는 것은 아니고, 두 클래스 모두 `AddReferencedObjects`를 직접 구현해 참조를 넘긴다.
 
 사슬의 최상단도 마찬가지다. 월드를 잡고 있는 것은 `UEngine::AddReferencedObjects`이고, 여기서 `WorldList`를 순회하며 각 월드를 GC에 등록한다.
 
 ### UPROPERTY가 하는 일
 
-여기가 원래 질문이다. GC가 객체를 마킹하려면 **그 객체 메모리의 어디에 UObject 포인터가 있는지** 알아야 한다. 일반 C++이라면 알 방법이 없다. 구조체 안에 포인터가 몇 개 있고 어느 위치에 있는지는 컴파일이 끝나면 사라지는 정보다.
+GC가 객체를 마킹하려면 **그 객체의 어느 멤버가 UObject 포인터이고 메모리의 어디에 있는지** 알아야 한다. 일반 C++에는 이 정보가 없다. 클래스 안에 포인터가 몇 개 있고 어느 위치에 있는지는 컴파일이 끝나면 사라진다.
 
-리플렉션이 그 정보를 남긴다. UHT가 `UPROPERTY()`를 파싱해 프로퍼티의 타입과 **메모리 오프셋**을 `UClass`에 등록하고, 엔진이 클래스마다 참조 위치 목록을 미리 조립해 둔다.
+`UPROPERTY`가 그 정보를 남기는 마커다. 매크로 자체는 컴파일러에게 아무 의미가 없다.
+
+```cpp
+// CoreUObject/Public/UObject/ObjectMacros.h
+#define UPROPERTY(...)
+```
+
+정의가 비어 있다. 읽는 쪽은 UHT다. 빌드 전에 소스를 훑다가 `UPROPERTY`가 붙은 멤버를 만나면 그 타입과 **메모리 오프셋**을 `UClass`에 등록하는 코드를 생성한다. 엔진은 그 정보로 클래스마다 참조 위치 목록을 미리 조립해 둔다.
 
 ```cpp
 // CoreUObject/Public/UObject/Class.h
@@ -116,12 +123,12 @@ GC는 마킹할 때 리플렉션 정보를 매번 뒤지는 대신 이 목록을
 
 ```cpp
 UPROPERTY()
-TObjectPtr<UInventoryComponent> Inventory;   // GC가 추적한다
+TObjectPtr<UInventoryComponent> Inventory;  // GC가 추적한다
 
-UInventoryComponent* Cached;                 // GC가 모른다. 회수된 뒤 접근하면 크래시
+UInventoryComponent* Cached;                // GC가 모른다
 ```
 
-두 번째 포인터는 값이 그대로 남아 있어서 겉보기에는 멀쩡하다. GC가 언제 도느냐에 따라 증상이 나타나는 시점이 달라지므로 재현이 불규칙하다.
+두 번째 포인터는 대상이 회수돼도 값이 그대로 남아 있어서 겉보기에는 멀쩡하다. 접근하는 순간 크래시하고, GC가 언제 도느냐에 따라 증상이 나타나는 시점이 달라져 재현이 불규칙하다.
 
 리플렉션으로 잡히지 않는 참조는 직접 알려줄 수 있다.
 
@@ -138,7 +145,7 @@ UInventoryComponent* Cached;                 // GC가 모른다. 회수된 뒤 �
 
 Outer가 하는 일은 네 가지다.
 
-- 이름 공간. 같은 Outer 안에서 이름이 고유해야 한다
+- 이름 충돌 방지. 같은 Outer 아래에서는 이름이 겹칠 수 없다
 - 패키지 결정. Outer 체인을 끝까지 타고 올라가면 최상위 `UPackage`가 나오고 이게 저장 단위가 된다
 - `GetWorld()` 조회 경로
 - 소유자 조회
@@ -154,13 +161,13 @@ Outer가 하는 일은 네 가지다.
 Outer를 지정하는 것은 객체 안의 필드에 값을 대입하는 일이다. **Outer 쪽에서 자식을 참조로 등록하지 않는다.** 참조 방향이 자식에서 Outer로 향한다.
 
 ```cpp
-// this를 Outer로 줬지만 이것만으로는 살아남지 못한다
+// this를 Outer로 등록한다. GC 방지가 되는 것은 아니다
 UMyObject* Obj = NewObject<UMyObject>(this);
 ```
 
-전역 객체 배열에 등록되는 것과 GC가 살려두는 것도 별개다. 배열에 있는 것은 존재한다는 뜻일 뿐이고, 루트에서 도달 가능해야 산다. 위 코드는 `this` 쪽에 `UPROPERTY` 멤버로 잡아두지 않으면 다음 GC에 회수된다.
+`NewObject`는 객체를 전역 객체 배열에 등록할 뿐 GC를 막지 않는다. 루트에서 도달 가능해야 살아남는다. 위 코드는 `this` 쪽에 `UPROPERTY` 멤버로 잡아두지 않으면 다음 GC에 회수된다.
 
-"Outer를 줬으니 부모가 잡고 있겠지"가 가장 흔한 오해다. Outer는 소유 관계를 표현하는 것이지 수명 보장 장치가 아니다.
+Outer는 소유 관계를 표현하는 것이지 수명 보장 장치가 아니다.
 
 ### Owner와의 차이
 
@@ -168,7 +175,7 @@ UMyObject* Obj = NewObject<UMyObject>(this);
 |---|---|---|
 | 대상 | 모든 UObject | `AActor`만 |
 | 성격 | UObject 계층과 직렬화 개념 | 게임플레이와 네트워크 개념 |
-| 용도 | 이름 공간, 패키지, `GetWorld()` 경로 | 리플리케이션 relevancy, RPC 라우팅, 가시성 |
+| 용도 | 이름 관리, 패키지, `GetWorld()` 경로 | 리플리케이션 relevancy, RPC 라우팅, 가시성 |
 | 변경 | 생성 시 결정 | `SetOwner()`로 런타임 변경 |
 
 ```cpp
@@ -178,13 +185,15 @@ UPROPERTY(ReplicatedUsing=OnRep_Owner)
 TObjectPtr<AActor> Owner;
 ```
 
+Owner는 액터의 네트워크 소유자다. 서버가 이 액터를 어떤 클라이언트에 복제할지 정하는 relevancy 계산에 쓰이고, 클라이언트가 서버로 보내는 RPC도 소유권이 있어야 통과한다. `bOwnerNoSee`와 `bOnlyOwnerSee` 같은 가시성 옵션도 Owner를 기준으로 동작한다. 1인칭 무기 메시를 본인에게만 보이게 하는 처리가 이걸 쓴다.
+
 액터의 Outer는 `ULevel`이고 Owner는 스폰시킨 액터다. 투사체라면 Outer는 레벨, Owner는 발사한 캐릭터가 된다. 컴포넌트는 Outer와 Owner가 사실상 같아서 둘을 같은 것으로 착각하기 쉽다.
 
 ## SpawnActor한 액터의 수명
 
-`SpawnActor`로 만든 액터를 어떤 변수에도 담아두지 않으면 어떻게 될까. 파괴되지 않는다.
+`SpawnActor`로 만든 액터는 어떤 변수에도 담아두지 않아도 파괴되지 않는다.
 
-질문의 전제가 성립하지 않기 때문이다. 앞에서 본 대로 `ULevel::Actors`가 그 액터를 담고 있고, 레벨은 월드가, 월드는 루트가 잡고 있다. 아무도 참조하지 않는 상태가 아니라 **월드가 참조하고 있는** 상태다.
+앞에서 본 대로 `ULevel::Actors`가 그 액터를 담고 있고, 레벨은 월드가, 월드는 루트가 잡고 있다. 아무도 참조하지 않는 상태가 아니라 **월드가 참조하고 있는** 상태다.
 
 제거하려면 `Destroy()`를 명시적으로 호출해야 한다.
 
@@ -195,18 +204,18 @@ AProjectile* P = GetWorld()->SpawnActor<AProjectile>(Class, Loc, Rot);
 P->Destroy();   // 이걸 불러야 제거 절차가 시작된다
 ```
 
-`NewObject`와 정반대라는 점이 요지다.
+두 생성 함수는 소속부터 다르다. `NewObject`는 `UObjectGlobals.h`에 선언된 전역 템플릿 함수이고, `SpawnActor`는 `UWorld`의 멤버 함수다. 월드를 거쳐야 만들어진다는 점이 수명 차이로 이어진다.
 
-| | 방치하면 |
-|---|---|
-| `NewObject` | `UPROPERTY`로 안 잡으면 회수된다 |
-| `SpawnActor` | 월드가 잡고 있어서 계속 남는다 |
+| | 소속 | 방치하면 |
+|---|---|---|
+| `NewObject` | 전역 함수 | `UPROPERTY`로 안 잡으면 회수된다 |
+| `SpawnActor` | `UWorld`의 멤버 함수 | 월드가 잡고 있어서 계속 남는다 |
 
 그래서 액터는 GC 누수가 아니라 방치 누수가 문제가 된다. 투사체나 이펙트를 Destroy 없이 계속 스폰하면 월드에 쌓여 Tick 비용과 메모리를 먹는다.
 
 ## USTRUCT
 
-`USTRUCT`도 리플렉션을 갖지만 UObject 체계 바깥에 있다.
+`USTRUCT`도 리플렉션을 갖지만 UObject가 아니기 때문에 UCLASS와 차이가 생긴다.
 
 | | UCLASS | USTRUCT |
 |---|---|---|
@@ -220,7 +229,7 @@ P->Destroy();   // 이걸 불러야 제거 절차가 시작된다
 
 선택 기준은 고유한 정체성이 필요한가다. 데이터 묶음이고 값으로 다루는 게 자연스러우면 USTRUCT, 고유한 수명과 동작을 갖고 여러 곳에서 참조로 공유되어야 하면 UCLASS다.
 
-성능 차이도 크다. 아이템 데이터 1,000개를 `TArray`에 담을 때 USTRUCT면 연속 메모리에 값으로 들어가 GC가 신경 쓸 것이 없다. UObject로 만들면 포인터 배열이 되고 GC가 매 사이클마다 1,000개를 추적해야 한다. DataTable의 행 타입이 USTRUCT인 이유가 여기 있다.
+아이템 데이터 1,000개를 `TArray`에 담을 때 USTRUCT면 연속 메모리에 값으로 들어가 GC가 신경 쓸 것이 없다. UObject로 만들면 포인터 배열이 되고 GC가 매 사이클마다 1,000개를 추적해야 한다. DataTable의 행 타입이 USTRUCT인 이유가 여기 있다.
 
 ## 정리
 
