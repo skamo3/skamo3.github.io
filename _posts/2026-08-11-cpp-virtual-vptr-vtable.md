@@ -60,163 +60,121 @@ flowchart LR
 
 ### 직접 확인
 
-```cpp
-// 멤버는 int 하나로 같고, 가상 함수 유무만 다르다
-struct PlainData { int hp; };
+vptr은 객체 메모리의 맨 앞에 놓인다. 객체 주소를 포인터로 한 번 역참조하면 그 값을 읽을 수 있다.
 
-struct Character {
+```cpp
+#include <cstdio>
+
+// 멤버는 int 하나로 같고, 가상 함수 유무만 다르다
+class PlainData
+{
+public:
+    int hp;
+};
+
+class Character
+{
+public:
     int hp;
     virtual void Attack() {}
     virtual ~Character() {}
 };
-struct Warrior : Character { void Attack() override {} };
-struct Archer  : Character { void Attack() override {} };
+
+class Warrior : public Character
+{
+public:
+    void Attack() override {}
+};
+
+class Archer : public Character
+{
+public:
+    void Attack() override {}
+};
 
 // 객체 맨 앞에 놓인 포인터가 vptr이다
 void* vptr_of(const void* obj) { return *(void* const*)obj; }
 
-Warrior w1, w2, w3;
-Archer  a1, a2;
-Character c1;
+int main()
+{
+    printf("sizeof(void*)     = %d\n", (int)sizeof(void*));
+    printf("sizeof(PlainData) = %d\n", (int)sizeof(PlainData));
+    printf("sizeof(Character) = %d\n", (int)sizeof(Character));
 
-printf("sizeof(void*)     = %d\n", (int)sizeof(void*));
-printf("sizeof(PlainData) = %d\n", (int)sizeof(PlainData));
-printf("sizeof(Character) = %d\n", (int)sizeof(Character));
-printf("w1 vptr = %p\n", vptr_of(&w1));
-// a1, a2, c1도 동일하게 출력
+    Warrior w1, w2, w3;
+    Archer  a1, a2;
+    Character c1;
+
+    printf("w1 vptr = %p\n", vptr_of(&w1));
+    printf("w2 vptr = %p\n", vptr_of(&w2));
+    printf("w3 vptr = %p\n", vptr_of(&w3));
+    printf("a1 vptr = %p\n", vptr_of(&a1));
+    printf("a2 vptr = %p\n", vptr_of(&a2));
+    printf("c1 vptr = %p\n", vptr_of(&c1));
+}
 ```
 
-MSVC 19.x(x64) 결과다.
+Visual Studio 2022, x64 결과다.
 
 ```
 sizeof(void*)     = 8
 sizeof(PlainData) = 4
 sizeof(Character) = 16
 
-w1 vptr = 00007FF62EB18410
-w2 vptr = 00007FF62EB18410
-w3 vptr = 00007FF62EB18410
-a1 vptr = 00007FF62EB18440
-a2 vptr = 00007FF62EB18440
-c1 vptr = 00007FF62EB183E8
+w1 vptr = 00007FF776BE2438
+w2 vptr = 00007FF776BE2438
+w3 vptr = 00007FF776BE2438
+a1 vptr = 00007FF776BE2450
+a2 vptr = 00007FF776BE2450
+c1 vptr = 00007FF776BE2420
 ```
 
 Warrior 세 개의 vptr이 전부 같은 주소다. Archer 두 개도 자기들끼리 같고, Character는 또 다르다. 객체 수와 무관하게 표는 클래스당 하나다.
 
-`int` 하나짜리 `PlainData`는 4바이트, 같은 멤버에 가상 함수만 추가한 `Character`는 16바이트다. vptr 8바이트가 붙고 정렬 때문에 4바이트가 패딩으로 들어갔다. 32비트 g++에서는 포인터가 4바이트라 같은 코드가 8바이트로 나온다.
+`int` 하나짜리 `PlainData`는 4바이트, 같은 멤버에 가상 함수만 추가한 `Character`는 16바이트다. vptr 8바이트가 붙고 정렬 때문에 4바이트가 패딩으로 들어갔다. 32비트로 빌드하면 포인터가 4바이트라 8바이트로 나온다.
 
-## vtable의 실제 구성
+## vtable에 함께 들어가는 타입 정보
 
-vtable 레이아웃은 표준이 아니라 ABI가 정한다. 표준에는 vtable이라는 단어가 없다.
-
-vptr은 vtable의 시작이 아니라 **함수 포인터 배열의 시작**을 가리킨다. 메타데이터는 그 앞쪽, 음수 인덱스에 놓인다. Itanium ABI 기준 배치다.
+vtable에는 가상 함수 주소만 있는 게 아니다. 그 클래스가 무엇인지 알려주는 타입 정보도 함께 들어간다. `typeid`와 `dynamic_cast`가 실제 타입을 판별할 때 읽는 값이 이것이다.
 
 ```
-        ┌────────────────────────────┐
- vt[-2] │ offset-to-top              │
- vt[-1] │ typeinfo*  (RTTI)          │
-        ├────────────────────────────┤
- vt[ 0] │ &Warrior::Attack           │  ← vptr이 가리키는 위치
- vt[ 1] │ &Warrior::~Warrior         │
-        └────────────────────────────┘
+Warrior 객체                  Warrior vtable
+┌──────────────┐             ┌──────────────────────┐
+│ vptr         │ ─────────▶  │ 타입 정보 (RTTI)      │
+├──────────────┤             ├──────────────────────┤
+│ hp           │             │ &Warrior::Attack     │
+└──────────────┘             │ &Warrior::~Warrior   │
+                             └──────────────────────┘
 ```
 
-`vt[-1]`이 RTTI다. `std::type_info` 객체를 가리키고, `typeid`와 `dynamic_cast`가 이 값을 읽어 실제 타입을 판별한다.
-
-포인터 연산으로 직접 꺼내볼 수 있다.
+앞의 코드 끝에 두 줄만 추가하면 확인할 수 있다.
 
 ```cpp
-void** vtable_of(const void* obj) { return *(void** const*)obj; }
+#include <typeinfo>
 
-void** vt = vtable_of(&w);
-std::ptrdiff_t offset_to_top = *(std::ptrdiff_t*)(vt - 2);
-const std::type_info* ti = *(const std::type_info**)(vt - 1);
+Character* p = &w1;
+printf("typeid(p).name()  = %s\n", typeid(p).name());
+printf("typeid(*p).name() = %s\n", typeid(*p).name());
 ```
 
-MinGW g++ 6.3.0(32비트) 결과다.
-
 ```
-Character  vtable             = 0040b68c
-           [-2] offset-to-top = 0
-           [-1] typeinfo      = 9Character
-           [ 0] 첫 가상 함수  = 004095dc
-
-Warrior    vtable             = 0040b678
-           [-2] offset-to-top = 0
-           [-1] typeinfo      = 7Warrior
-           [ 0] 첫 가상 함수  = 00409590
-
-typeid(*p).name() = 7Warrior
+typeid(p).name()  = class Character * __ptr64
+typeid(*p).name() = class Warrior
 ```
 
-`9Character`의 앞 숫자는 이름 길이다. GCC의 이름 맹글링 규칙이라 그렇게 나온다. 직접 읽은 `vt[-1]`의 이름과 `typeid(*p).name()`의 결과가 같다. `typeid`가 vtable의 이 자리를 읽는다는 뜻이다.
+`typeid(p)`는 포인터 자체를 물어본 것이라 선언된 타입, 즉 정적 타입이 나온다. `typeid(*p)`는 포인터가 가리키는 객체를 물어본 것이라 vptr을 따라가 vtable의 타입 정보를 읽고, 실제 타입인 `Warrior`가 나온다. 정적 타입과 동적 타입의 차이가 그대로 출력된다.
 
-`dynamic_cast`도 마찬가지다. 그래서 RTTI를 끄면(`-fno-rtti`, `/GR-`) 두 기능을 쓸 수 없다.
+`dynamic_cast`도 같은 정보를 쓴다. 그래서 RTTI를 끄고 빌드하면(`/GR-`, `-fno-rtti`) `typeid`와 `dynamic_cast`를 함께 쓸 수 없게 된다.
 
-MSVC는 배치가 다르다.
+언리얼은 기본적으로 RTTI를 끈다. 대신 `UCLASS` 리플렉션으로 자체 타입 정보를 만들어 `Cast<T>`를 제공한다. 언리얼에서 `dynamic_cast` 대신 `Cast`를 쓰는 이유가 여기 있다.
 
-| | Itanium ABI (GCC/Clang) | MSVC |
-|---|---|---|
-| 타입 정보 | `vt[-1]`에 `type_info*` | `vt[-1]`에 Complete Object Locator 포인터 |
-| 오프셋 | `vt[-2]`에 offset-to-top | COL 구조체 안에 포함 |
-| 슬롯 소비 | 2칸 | 1칸 |
+### 디버거로 보기
 
-MSVC는 타입 정보와 오프셋을 COL이라는 구조체 하나로 묶어 슬롯 한 칸만 쓴다. 위의 `vt - 2` 코드가 MSVC에서 그대로 통하지 않는 이유다.
+코드를 짜지 않고 확인하는 방법도 있다. Visual Studio에서 중단점을 걸고 지역 창이나 조사식에서 객체를 펼치면 `__vfptr` 항목이 나온다. 이걸 다시 펼치면 슬롯 번호별로 어떤 함수가 들어 있는지 함수 이름까지 확인할 수 있다.
 
-언리얼은 기본적으로 RTTI를 끄고 빌드한다. 대신 `UCLASS` 리플렉션으로 자체 타입 정보를 만들어 `Cast<T>`를 제공한다. 언리얼에서 `dynamic_cast` 대신 `Cast`를 쓰는 이유가 여기 있다.
+부모 포인터에 자식 객체를 담아둔 상태에서 보면 `__vfptr`에 자식 클래스의 함수가 들어 있다. 동적 바인딩이 왜 자식 구현을 부르는지 눈으로 확인하기에는 이 방법이 가장 빠르다.
 
-## 다중 상속에서의 offset-to-top
-
-단일 상속에서 offset-to-top은 항상 0이다. 다중 상속에서 값이 생긴다.
-
-```cpp
-struct A { virtual void f() {} int a; };
-struct B { virtual void g() {} int b; };
-struct C : A, B {};
-```
-
-`C` 객체는 A 파트와 B 파트를 이어붙인 모양이 된다. 각 파트가 자기 vptr을 갖기 때문에 vptr이 두 개다.
-
-```
-C 객체 (MSVC x64, 총 32바이트)
-        ┌──────────────┐
- +0     │ vptr_A       │  ← &c, (A*)&c
- +8     │ a            │
-        ├──────────────┤
- +16    │ vptr_B       │  ← (B*)&c
- +24    │ b            │
-        └──────────────┘
-```
-
-`B*`로 받으면 포인터가 객체 시작이 아니라 중간을 가리키게 된다. B 인터페이스로 보이려면 B 파트의 시작으로 옮겨야 하기 때문이다.
-
-```
-sizeof(A)=16 sizeof(B)=16 sizeof(C)=32
-&c     = 00000031265DF788
-(A*)&c = 00000031265DF788  diff=0
-(B*)&c = 00000031265DF798  diff=16
-dynamic_cast<void*>(pb) = 00000031265DF788
-```
-
-`(B*)&c`가 16바이트 뒤를 가리킨다.
-
-offset-to-top은 이 상황을 되돌리기 위한 값이다. B 파트가 가리키는 vtable에 "여기서 몇 바이트 앞으로 가면 완전한 객체의 시작인지"가 음수로 적혀 있다. g++ 32비트에서 확인한 결과다.
-
-```
-&c     = 0061ff00
-(A*)&c = 0061ff00   (차이 0)
-(B*)&c = 0061ff08   (차이 8)
-
-A 파트 offset-to-top = 0
-B 파트 offset-to-top = -8
-
-dynamic_cast<void*>(pb) = 0061ff00
-pb + offset-to-top      = 0061ff00
-```
-
-`dynamic_cast<void*>`로 얻은 완전한 객체 주소와, `pb`에 offset-to-top을 더한 값이 정확히 일치한다. 32비트라 포인터가 4바이트여서 오프셋이 8로 나왔고, 64비트에서는 16이 된다.
-
-`B*`로 받은 포인터로 `C`가 오버라이드한 함수를 호출할 때도 보정이 필요하다. 함수는 `C*`를 기대하는데 넘어온 건 16바이트 밀린 주소라서다. 이 보정은 thunk라는 작은 어댑터 코드가 처리하고, vtable 슬롯에는 실제 함수 대신 thunk 주소가 들어간다.
+vtable 안의 정확한 배치는 표준이 정하지 않는다. 컴파일러가 따르는 ABI마다 다르고, 표준에는 vtable이라는 단어조차 없다. 타입 정보가 함수 주소 앞쪽에 놓인다는 정도까지만 알아두면 된다.
 
 ## 생성자 진행에 따른 vptr 갱신
 
@@ -249,32 +207,41 @@ flowchart TD
 각 생성자와 소멸자에서 vptr 값을 찍고, 같은 자리에서 가상 함수를 불렀다.
 
 ```cpp
-struct Character {
+class Character
+{
+public:
     Character() { printf("Character 생성자  vptr = %p  ", vptr_of(this)); Attack(); }
     virtual ~Character() { printf("Character 소멸자  vptr = %p  ", vptr_of(this)); Attack(); }
     virtual void Attack() { printf("-> Character::Attack\n"); }
 };
-// Warrior, Paladin도 같은 형태로 상속
-```
 
-MSVC x64 결과다.
+class Warrior : public Character { /* 같은 형태로 출력 */ };
+class Paladin : public Warrior   { /* 같은 형태로 출력 */ };
+
+int main()
+{
+    Character* p = new Paladin();
+    p->Attack();
+    delete p;
+}
+```
 
 ```
 [생성]
-  Character 생성자  vptr = 00007FF6D9849398  -> Character::Attack
-  Warrior   생성자  vptr = 00007FF6D9849418  -> Warrior::Attack
-  Paladin   생성자  vptr = 00007FF6D9849498  -> Paladin::Attack
+  Character 생성자  vptr = 00007FF64A159398  -> Character::Attack
+  Warrior   생성자  vptr = 00007FF64A159418  -> Warrior::Attack
+  Paladin   생성자  vptr = 00007FF64A159498  -> Paladin::Attack
 
 [완성된 객체]
-  외부에서 호출     vptr = 00007FF6D9849498  -> Paladin::Attack
+  외부에서 호출     vptr = 00007FF64A159498  -> Paladin::Attack
 
 [소멸]
-  Paladin   소멸자  vptr = 00007FF6D9849498  -> Paladin::Attack
-  Warrior   소멸자  vptr = 00007FF6D9849418  -> Warrior::Attack
-  Character 소멸자  vptr = 00007FF6D9849398  -> Character::Attack
+  Paladin   소멸자  vptr = 00007FF64A159498  -> Paladin::Attack
+  Warrior   소멸자  vptr = 00007FF64A159418  -> Warrior::Attack
+  Character 소멸자  vptr = 00007FF64A159398  -> Character::Attack
 ```
 
-vptr이 `...398` → `...418` → `...498`로 올라갔다가 소멸 때 그대로 되돌아온다. g++에서도 주소만 다를 뿐 같은 패턴이 나왔다.
+vptr이 `...398` → `...418` → `...498`로 올라갔다가 소멸 때 그대로 되돌아온다.
 
 ## 생성자에서 가상 함수 호출
 
@@ -315,10 +282,10 @@ delete character;
 
 `virtual`을 붙이면 소멸자도 vtable 슬롯에 들어간다. 그러면 다른 가상 함수와 똑같이 vptr을 거쳐 실제 타입의 소멸자를 찾아 호출하고, 이어서 부모 소멸자까지 자동으로 연결된다.
 
-그렇다고 모든 클래스에 붙이면 안 된다. vptr이 생겨서 객체 크기가 포인터 하나만큼 늘고, 정렬 패딩까지 붙으면 `int` 하나짜리 구조체가 4바이트에서 16바이트가 된다. POD 성질도 잃는다. 부모 포인터로 삭제될 수 있는 클래스에만 붙이고, 상속시킬 생각이 없으면 `final`을 붙이는 편이 낫다.
+그렇다고 모든 클래스에 붙이면 안 된다. vptr이 생겨서 객체 크기가 포인터 하나만큼 늘고, 정렬 패딩까지 붙으면 `int` 하나짜리 클래스가 4바이트에서 16바이트가 된다. 부모 포인터로 삭제될 수 있는 클래스에만 붙이고, 상속시킬 생각이 없으면 `final`을 붙이는 편이 낫다.
 
 ## 정리
 
 - vtable은 클래스당 하나, 컴파일과 링크 시점에 생성되어 읽기 전용 영역에 상수로 존재한다
 - vptr은 객체당 하나, 생성자가 진행되면서 베이스부터 파생까지 단계적으로 갱신된다
-- vtable에는 가상 함수 주소 외에 타입 정보(RTTI)와 오프셋 보정값이 함께 들어간다
+- vtable에는 가상 함수 주소와 함께 타입 정보(RTTI)가 들어가고, `typeid`와 `dynamic_cast`가 이를 읽는다
