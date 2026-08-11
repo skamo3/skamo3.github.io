@@ -162,13 +162,13 @@ typeid(p).name()  = class Character * __ptr64
 typeid(*p).name() = class Warrior
 ```
 
-`typeid(p)`는 포인터 자체를 물어본 것이라 선언된 타입, 즉 정적 타입이 나온다. `typeid(*p)`는 포인터가 가리키는 객체를 물어본 것이라 vptr을 따라가 vtable의 타입 정보를 읽고, 실제 타입인 `Warrior`가 나온다. 정적 타입과 동적 타입의 차이가 그대로 출력된다.
+포인터 자체인 `p`와 포인터가 담고있는 객체인 `*p`를 비교해보면 `typeid(p)`는 `Character*`의 포인터 정보를 알려준다. 하지만 `typeid(*p)`는 실제 포인터가 담고있는 객체에 접근하고, 이 때 vptr을 따라가 vtable의 타입 정보를 읽어오게 되면서 실제 타입인 `Warrior`이 출력으로 나타난다.
 
-`dynamic_cast`도 같은 정보를 쓴다. 그래서 RTTI를 끄고 빌드하면(`/GR-`, `-fno-rtti`) `typeid`와 `dynamic_cast`를 함께 쓸 수 없게 된다.
+`dynamic_cast`도 비슷한 개념으로 실행된다. 빌드 시 RTTI를 끄는 옵션을 주면 `typeid`와 `dynamic_cast`도 사용이 불가능해진다.
 
-언리얼은 기본적으로 RTTI를 끈다. 대신 `UCLASS` 리플렉션으로 자체 타입 정보를 만들어 `Cast<T>`를 제공한다. 언리얼에서 `dynamic_cast` 대신 `Cast`를 쓰는 이유가 여기 있다.
+언리얼에서는 `UCLASS`를 이용한 리플렉션으로 자체 타입정보를 만들고, `Cast<T>`를 제공해 타입을 알 수 있게 해준다. 언리얼에서는 기본적으로 RTTI를 끄기 때문에 `dynamic_cast` 대신 `Cast<T>`를 써야한다.
 
-vtable 안의 정확한 배치는 표준이 정하지 않는다. 컴파일러가 따르는 ABI마다 다르고, 표준에는 vtable이라는 단어조차 없다. 타입 정보가 함수 주소와 함께 들어간다는 정도까지만 알아두면 된다.
+vtable은 컴파일러마다 구현 방식이 다르고 vtable이라는 용어도 추상적인 단어이지 공식 단어가 아니다. 그렇기에 virtual을 쓰게되면 타입 정보와 함수 주소를 이용해 실제 객체를 판별한다는 정도로 이해하면 될 거 같다.
 
 ## vtable의 생성과 vptr 갱신
 
