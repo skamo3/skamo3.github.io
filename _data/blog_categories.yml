@@ -2,7 +2,7 @@ unreal:
   label: "Unreal Engine · C++"
   color: "#4FD1FF"
 graphics:
-  label: "그래픽스/게임 이야기"
+  label: "그래픽스 · 게임 이야기"
   color: "#FF5DC8"
 algorithm:
   label: 알고리즘
