@@ -31,7 +31,7 @@ FProperty* PropertyLink;
 FProperty* RefLink;
 ```
 
-`PropertyLink`가 전체 프로퍼티 체인이고, `RefLink`는 그중 **다른 UObject를 가리키는 프로퍼티만** 따로 모아둔 체인이다. GC가 관심 있는 것은 후자다.
+`PropertyLink`가 전체 프로퍼티 체인이고, `RefLink`는 그중 **다른 UObject를 가리키는 프로퍼티만** 따로 모아둔 체인이다. GC는 `RefLink`를 참고해 오브젝트를 관리한다.
 
 ### UCLASS 매크로가 하는 일
 
