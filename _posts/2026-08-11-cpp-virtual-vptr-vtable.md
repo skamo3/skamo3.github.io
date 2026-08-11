@@ -114,7 +114,7 @@ int main()
 }
 ```
 
-Visual Studio 2022, x64 결과다.
+Visual Studio 2022, x64 결과다. 주소값 자체는 빌드와 실행마다 바뀌니 값이 같은지 다른지만 보면 된다.
 
 ```
 sizeof(void*)     = 8
@@ -168,19 +168,38 @@ typeid(*p).name() = class Warrior
 
 언리얼은 기본적으로 RTTI를 끈다. 대신 `UCLASS` 리플렉션으로 자체 타입 정보를 만들어 `Cast<T>`를 제공한다. 언리얼에서 `dynamic_cast` 대신 `Cast`를 쓰는 이유가 여기 있다.
 
-### 디버거로 보기
+vtable 안의 정확한 배치는 표준이 정하지 않는다. 컴파일러가 따르는 ABI마다 다르고, 표준에는 vtable이라는 단어조차 없다. 타입 정보가 함수 주소와 함께 들어간다는 정도까지만 알아두면 된다.
 
-코드를 짜지 않고 확인하는 방법도 있다. Visual Studio에서 중단점을 걸고 지역 창이나 조사식에서 객체를 펼치면 `__vfptr` 항목이 나온다. 이걸 다시 펼치면 슬롯 번호별로 어떤 함수가 들어 있는지 함수 이름까지 확인할 수 있다.
+## vtable의 생성과 vptr 갱신
 
-부모 포인터에 자식 객체를 담아둔 상태에서 보면 `__vfptr`에 자식 클래스의 함수가 들어 있다. 동적 바인딩이 왜 자식 구현을 부르는지 눈으로 확인하기에는 이 방법이 가장 빠르다.
+둘은 만들어지는 시점이 다르다.
 
-vtable 안의 정확한 배치는 표준이 정하지 않는다. 컴파일러가 따르는 ABI마다 다르고, 표준에는 vtable이라는 단어조차 없다. 타입 정보가 함수 주소 앞쪽에 놓인다는 정도까지만 알아두면 된다.
+- **vtable**: 컴파일과 링크 시점에 만들어져 실행 파일 안에 상수로 들어간다. 런타임에 생기지 않는다
+- **vptr**: 런타임에 객체가 생성될 때 값이 지정된다
 
-## 생성자 진행에 따른 vptr 갱신
+### 객체마다 하나씩
 
-vtable은 컴파일과 링크 시점에 만들어져 읽기 전용 영역에 상수로 박힌다. 런타임에 생기는 게 아니다. 반면 vptr은 객체가 만들어질 때 설정된다.
+앞에서 `w1`, `w2`, `w3`의 vptr 값이 전부 같았다. 같은 표를 가리킨다는 뜻이지 vptr 하나를 공유한다는 뜻은 아니다. vptr은 객체마다 따로 존재한다.
 
-그런데 한 번에 설정되지 않는다. 컴파일러는 생성자를 이렇게 확장한다.
+객체 주소와 vptr 값을 같이 찍어보면 구분된다.
+
+```cpp
+Warrior w1, w2;
+
+printf("w1  객체 주소 = %p   vptr 값 = %p\n", (void*)&w1, vptr_of(&w1));
+printf("w2  객체 주소 = %p   vptr 값 = %p\n", (void*)&w2, vptr_of(&w2));
+```
+
+```
+w1  객체 주소 = 000000936B1FFC28   vptr 값 = 00007FF6514883A0
+w2  객체 주소 = 000000936B1FFC18   vptr 값 = 00007FF6514883A0
+```
+
+객체 주소는 다르고 vptr 값은 같다. `w1`과 `w2`가 각자 자기 메모리에 vptr을 하나씩 갖고 있고, 거기 담긴 값이 같은 Warrior vtable 주소다. Warrior 객체를 1,000개 만들면 vptr도 1,000개 생기지만 vtable은 여전히 하나다.
+
+### 생성자가 진행되면서 갱신된다
+
+vptr은 객체 생성 시점에 한 번에 정해지지 않는다. 컴파일러는 생성자를 이렇게 확장한다.
 
 ```
 Warrior::Warrior()
@@ -194,54 +213,70 @@ Warrior::Warrior()
 
 갱신 시점은 베이스 생성자가 전부 끝난 직후, 자기 멤버 초기화가 시작되기 전이다. 상속이 3단이면 vptr이 세 번 바뀌고, 소멸자는 역순으로 되돌린다.
 
-<pre class="mermaid">
-flowchart TD
-    A["Character 생성자<br/>vptr = Character vtable"] --> B["Warrior 생성자<br/>vptr = Warrior vtable"]
-    B --> C["Paladin 생성자<br/>vptr = Paladin vtable"]
-    C --> D["객체 완성"]
-    D --> E["Paladin 소멸자<br/>vptr = Paladin vtable"]
-    E --> F["Warrior 소멸자<br/>vptr = Warrior vtable"]
-    F --> G["Character 소멸자<br/>vptr = Character vtable"]
-</pre>
-
-각 생성자와 소멸자에서 vptr 값을 찍고, 같은 자리에서 가상 함수를 불렀다.
+각 생성자와 소멸자에서 vptr 값을 찍고, 같은 자리에서 가상 함수를 불러봤다.
 
 ```cpp
+#include <cstdio>
+
+void* vptr_of(const void* obj) { return *(void* const*)obj; }
+
 class Character
 {
 public:
-    Character() { printf("Character 생성자  vptr = %p  ", vptr_of(this)); Attack(); }
-    virtual ~Character() { printf("Character 소멸자  vptr = %p  ", vptr_of(this)); Attack(); }
-    virtual void Attack() { printf("-> Character::Attack\n"); }
+    Character()          { Show("Character 생성자"); }
+    virtual ~Character() { Show("Character 소멸자"); }
+    virtual void Attack() { printf("Character::Attack\n"); }
+
+protected:
+    void Show(const char* at) { printf("%s   vptr = %p   -> ", at, vptr_of(this)); Attack(); }
 };
 
-class Warrior : public Character { /* 같은 형태로 출력 */ };
-class Paladin : public Warrior   { /* 같은 형태로 출력 */ };
+class Warrior : public Character
+{
+public:
+    Warrior()           { Show("Warrior   생성자"); }
+    ~Warrior() override { Show("Warrior   소멸자"); }
+    void Attack() override { printf("Warrior::Attack\n"); }
+};
+
+class Paladin : public Warrior
+{
+public:
+    Paladin()           { Show("Paladin   생성자"); }
+    ~Paladin() override { Show("Paladin   소멸자"); }
+    void Attack() override { printf("Paladin::Attack\n"); }
+};
 
 int main()
 {
     Character* p = new Paladin();
+    printf("%s       vptr = %p   -> ", "객체 완성", vptr_of(p));
     p->Attack();
     delete p;
 }
 ```
 
 ```
-[생성]
-  Character 생성자  vptr = 00007FF64A159398  -> Character::Attack
-  Warrior   생성자  vptr = 00007FF64A159418  -> Warrior::Attack
-  Paladin   생성자  vptr = 00007FF64A159498  -> Paladin::Attack
-
-[완성된 객체]
-  외부에서 호출     vptr = 00007FF64A159498  -> Paladin::Attack
-
-[소멸]
-  Paladin   소멸자  vptr = 00007FF64A159498  -> Paladin::Attack
-  Warrior   소멸자  vptr = 00007FF64A159418  -> Warrior::Attack
-  Character 소멸자  vptr = 00007FF64A159398  -> Character::Attack
+Character 생성자   vptr = 00007FF7E01A9368   -> Character::Attack
+Warrior   생성자   vptr = 00007FF7E01A93E0   -> Warrior::Attack
+Paladin   생성자   vptr = 00007FF7E01A9440   -> Paladin::Attack
+객체 완성       vptr = 00007FF7E01A9440   -> Paladin::Attack
+Paladin   소멸자   vptr = 00007FF7E01A9440   -> Paladin::Attack
+Warrior   소멸자   vptr = 00007FF7E01A93E0   -> Warrior::Attack
+Character 소멸자   vptr = 00007FF7E01A9368   -> Character::Attack
 ```
 
-vptr이 `...398` → `...418` → `...498`로 올라갔다가 소멸 때 그대로 되돌아온다.
+vptr이 `...368` → `...3E0` → `...440`으로 올라갔다가 소멸 때 그대로 되돌아온다. 오른쪽 열을 같이 보면 그 시점에 어느 구현이 불리는지가 vptr을 따라간다.
+
+| 실행 시점 | vptr이 가리키는 vtable | `Attack()` 호출 결과 |
+|---|---|---|
+| Character 생성자 | Character | `Character::Attack` |
+| Warrior 생성자 | Warrior | `Warrior::Attack` |
+| Paladin 생성자 | Paladin | `Paladin::Attack` |
+| 객체 완성 | Paladin | `Paladin::Attack` |
+| Paladin 소멸자 | Paladin | `Paladin::Attack` |
+| Warrior 소멸자 | Warrior | `Warrior::Attack` |
+| Character 소멸자 | Character | `Character::Attack` |
 
 ## 생성자에서 가상 함수 호출
 
