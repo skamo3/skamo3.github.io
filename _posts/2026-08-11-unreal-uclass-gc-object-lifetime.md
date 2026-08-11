@@ -33,6 +33,18 @@ FProperty* RefLink;
 
 `PropertyLink`가 전체 프로퍼티 체인이고, `RefLink`는 그중 **다른 UObject를 가리키는 프로퍼티만** 따로 모아둔 체인이다. GC는 `RefLink`를 참고해 오브젝트를 관리한다.
 
+`UClass`가 UObject라는 것은 에디터 콘솔에서 `obj list`를 쳐보면 확인된다. 클래스별 인스턴스 개수를 세어주는 명령인데, 리플렉션 메타데이터 자체가 목록에 잡힌다.
+
+```
+Class            8539
+ScriptStruct     6605
+Function        14721
+Enum             2614
+Package          1456
+```
+
+`UClass` 인스턴스가 8,539개, `UFunction`이 14,721개다. 타입 정보를 표현하는 객체들이 일반 객체와 같은 전역 목록에서 관리되고 있다. `ScriptStruct`가 `Class`와 따로 세어지는 것도 눈에 띄는데, USTRUCT의 런타임 타입 객체가 별개라는 뜻이다.
+
 ### UCLASS 매크로가 하는 일
 
 UHT(Unreal Header Tool)가 빌드 전에 소스를 훑으면서 `UCLASS()` 매크로를 확인한다. 그리고 그 클래스를 리플렉션 시스템에 등록할 코드를 생성해 `.generated.h`에 넣는다. 런타임에는 그 코드가 `UClass` 객체를 만든다.
@@ -51,6 +63,21 @@ public:
 필요한 조건은 세 가지다. UObject를 상속할 것, 헤더에 `.generated.h`를 포함할 것, 클래스 안에 `GENERATED_BODY()`를 넣을 것.
 
 리플렉션이 생기면 얻는 것은 에디터 노출, 직렬화, 블루프린트 상속, 네트워크 복제, `Cast<T>`, 그리고 GC 참조 추적이다. 이 글에서 다루는 것은 마지막 하나다.
+
+리플렉션이 남기는 정보가 이름만은 아니다. 지정자와 타입이 함께 등록되고 에디터가 그걸 읽어 UI를 만든다.
+
+```cpp
+UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,
+          Category = "Zolta | Abilities", meta = (DisplayName = "Slot 1 (Default Q)"))
+TSubclassOf<UGA_Skill> Slot1Ability;
+```
+
+<figure style="margin:1rem 0;">
+  <img src="/assets/images/blog/unreal-uclass-gc-object-lifetime/details-panel-ability-set.png" alt="디테일 패널에 Zolta 아래 Abilities 그룹으로 Primary Attack과 Slot 1~4가 클래스 드롭다운으로 표시된 모습" style="width:auto; max-width:100%; height:auto; display:block; margin:0 auto; border-radius:6px;">
+  <figcaption style="text-align:center; font-size:0.85em; color:var(--muted, #888); margin-top:4px;">데이터 애셋을 열었을 때의 디테일 패널</figcaption>
+</figure>
+
+`Category`의 `|`가 그룹 중첩이 되고, `DisplayName`이 변수명 대신 표시된다. `TSubclassOf<UGA_Skill>`은 타입 정보가 있으니 자유 입력이 아니라 그 클래스의 자식만 고를 수 있는 드롭다운으로 그려진다. 변수는 `protected`인데도 패널에 나온다. 노출 여부를 정하는 것은 C++ 접근 지정자가 아니라 `EditDefaultsOnly`다.
 
 ## 가비지 컬렉션이 참조를 추적하는 방법
 
