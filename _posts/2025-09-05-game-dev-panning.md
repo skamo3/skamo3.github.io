@@ -1,7 +1,7 @@
 ---
 title: "[게임 지식] 마우스 화면 이동 Panning에 대해"
 date: 2025-09-05
-category: dev-notes
+category: graphics
 ---
 
 # 게임 개발에서의 Panning (패닝)

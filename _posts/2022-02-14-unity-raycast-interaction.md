@@ -1,7 +1,7 @@
 ---
 title: "[Unity] 1인칭 캐릭터 Raycast로 오브젝트와 상호작용 하기"
 date: 2022-02-14
-category: unity
+category: devlog
 ---
 
 1인칭 캐릭터의 눈 앞에 있는 오브젝트와의 상호작용 구현 중 제대로 된 정보가 없어 직접 쓰기로 함.

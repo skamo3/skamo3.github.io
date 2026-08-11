@@ -1,7 +1,7 @@
 ---
 title: "GAS 로 스킬 구현하기"
 date: 2026-07-22 00:20:00
-category: game-dev
+category: unreal
 mermaid: true
 ---
 

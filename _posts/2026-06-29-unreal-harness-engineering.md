@@ -1,7 +1,7 @@
 ---
 title: "[UnrealEngine] 하네스 엔지니어링 적용해보기"
 date: 2026-06-29
-category: unreal
+category: ai
 ---
 
 최근 Codex를 이용하면서 말이 많은 하네스 엔지니어링을 언리얼 엔진에서는 어떤 방법으로 적용할 수 있을지도 함께 연구해보기로 했다.

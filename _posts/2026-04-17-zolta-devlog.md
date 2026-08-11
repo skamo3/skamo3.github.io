@@ -1,7 +1,7 @@
 ---
 title: "[Zolta] 스타크래프트 유즈맵 왕의 기사 시리즈로부터"
 date: 2026-04-17
-category: game-dev
+category: devlog
 ---
 
 어릴 적 스타크래프트 유즈맵을 하루 종일 플레이하곤 했었다.

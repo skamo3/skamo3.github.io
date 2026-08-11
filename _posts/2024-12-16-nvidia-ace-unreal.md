@@ -1,7 +1,7 @@
 ---
 title: "NVIDIA ACE 사용해보기"
 date: 2024-12-16
-category: unreal
+category: ai
 ---
 
 생성형 AI가 대세인 요즘 Unreal Engine도 예외는 아니다.

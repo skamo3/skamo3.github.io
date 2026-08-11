@@ -1,7 +1,7 @@
 ---
 title: "[Zolta] 유닛 AI와 어그로 시스템"
 date: 2026-07-13
-category: game-dev
+category: devlog
 ---
 
 Zolta의 유닛들은 처음엔 전투 로직을 컴포넌트 하나가 전부 담당했다. `AutoCombatComponent`가 Tick마다 근처에 적이 있는지 확인하고, 있으면 쫓아가서 때리는 식이었다. 유닛 수가 늘고 행동 조건이 복잡해지자 이 방식으로는 한계가 왔고, 결국 UE의 Behavior Tree와 Blackboard로 갈아엎었다.

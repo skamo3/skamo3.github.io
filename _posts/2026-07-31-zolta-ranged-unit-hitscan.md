@@ -1,7 +1,7 @@
 ---
 title: "[Zolta] 원거리 유닛 공격: 히트스캔 판정과 GAS 연결"
 date: 2026-07-31 00:00:00 +0900
-category: game-dev
+category: devlog
 ---
 
 Zolta의 일반 원거리 미니언은 발사체 Actor를 날리지 않는다. 공격 애니메이션의 발사 프레임에 서버가 한 번 판정하고, 화면에는 그 결과를 Beam과 Impact FX로 보여주는 히트스캔 방식으로 만들었다.

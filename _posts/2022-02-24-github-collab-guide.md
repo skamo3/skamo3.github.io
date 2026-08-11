@@ -1,7 +1,7 @@
 ---
 title: "[Github] 협업 시 Github을 이용하는 방법"
 date: 2022-02-24
-category: dev-notes
+category: ai
 ---
 
 ## Issues를 이용한 할 일 정리

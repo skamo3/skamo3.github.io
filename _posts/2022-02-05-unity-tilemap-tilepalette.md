@@ -1,7 +1,7 @@
 ---
 title: "[Unity] Tilemap과 Tilepalette 만들기"
 date: 2022-02-05
-category: unity
+category: devlog
 ---
 
 Unity에 익숙해지기 위해
