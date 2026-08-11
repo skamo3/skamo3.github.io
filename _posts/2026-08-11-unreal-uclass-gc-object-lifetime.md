@@ -43,7 +43,7 @@ Enum             2614
 Package          1456
 ```
 
-`UClass` 인스턴스가 8,539개, `UFunction`이 14,721개다. 타입 정보를 표현하는 객체들이 일반 객체와 같은 전역 목록에서 관리되고 있다. `ScriptStruct`가 `Class`와 따로 세어지는 것도 눈에 띄는데, USTRUCT의 런타임 타입 객체가 별개라는 뜻이다.
+`UClass` 인스턴스가 8,539개, `UFunction`이 14,721개다. 언리얼은 만들어진 모든 UObject를 **전역 객체 배열**에 등록해 관리하는데, 타입 정보를 표현하는 객체들도 예외가 아니다. `obj list`는 그 배열을 클래스별로 집계한 결과다. `ScriptStruct`가 `Class`와 따로 세어지는 것도 눈에 띄는데, USTRUCT의 런타임 타입 객체가 별개라는 뜻이다.
 
 ### UCLASS 매크로가 하는 일
 
@@ -65,6 +65,7 @@ public:
     int32 SlotCount = 30;
 };
 ```
+{: .no-collapse}
 
 필요한 조건은 세 가지다. UObject를 상속할 것, 헤더에 `.generated.h`를 포함할 것, 클래스 안에 `GENERATED_BODY()`를 넣을 것.
 
@@ -75,38 +76,34 @@ public:
 - the .generated.h file should always be the last #include in a header
 ```
 
-리플렉션이 생기면 얻는 것은 에디터 노출, 직렬화, 블루프린트 상속, 네트워크 복제, `Cast<T>`, 그리고 GC 참조 추적이다. 이 글에서 다루는 것은 마지막 하나다.
-
-리플렉션이 남기는 정보가 이름만은 아니다. 지정자와 타입이 함께 등록되고 에디터가 그걸 읽어 UI를 만든다.
-
-```cpp
-UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,
-          Category = "Zolta | Abilities", meta = (DisplayName = "Slot 1 (Default Q)"))
-TSubclassOf<UGA_Skill> Slot1Ability;
-```
-
-<figure style="margin:1rem 0;">
-  <img src="/assets/images/blog/unreal-uclass-gc-object-lifetime/details-panel-ability-set.png" alt="디테일 패널에 Zolta 아래 Abilities 그룹으로 Primary Attack과 Slot 1~4가 클래스 드롭다운으로 표시된 모습" style="width:auto; max-width:100%; height:auto; display:block; margin:0 auto; border-radius:6px;">
-  <figcaption style="text-align:center; font-size:0.85em; color:var(--muted, #888); margin-top:4px;">데이터 애셋을 열었을 때의 디테일 패널</figcaption>
-</figure>
-
-`Category`의 `|`가 그룹 중첩이 되고, `DisplayName`이 변수명 대신 표시된다. `TSubclassOf<UGA_Skill>`은 타입 정보가 있으니 자유 입력이 아니라 그 클래스의 자식만 고를 수 있는 드롭다운으로 그려진다. 변수는 `protected`인데도 패널에 나온다. 노출 여부를 정하는 것은 C++ 접근 지정자가 아니라 `EditDefaultsOnly`다.
+리플렉션이 생기면 얻는 것은 에디터 노출, 직렬화, 블루프린트 상속, 네트워크 복제, `Cast<T>`, 그리고 GC 참조 추적이다.
 
 ## 가비지 컬렉션이 참조를 추적하는 방법
 
 ### Mark and Sweep을 쓰는 이유
 
-참조 카운팅은 순환 참조를 회수하지 못한다. 액터가 컴포넌트를 들고 컴포넌트가 다시 액터를 가리키면 양쪽 카운트가 0이 되지 않아 둘 다 영영 남는다. 게임 객체는 이런 상호 참조가 일상이다.
+객체를 회수하는 방식은 크게 둘로 나뉜다. 하나는 객체 간의 참조를 세는 방식이다. 어떤 객체를 몇 곳에서 가리키는지 카운트해 두고 그 수가 0이 되면 회수한다.
 
-참조를 주고받을 때마다 카운터를 고쳐야 해서 비용이 계속 붙는 것도 부담이다.
+이 방식은 순환 참조에서 막힌다. 액터가 컴포넌트를 들고 컴포넌트가 다시 액터를 가리키면 양쪽 카운트가 0이 되지 않는다. 바깥에서 아무도 쓰지 않는데도 영영 지워지지 않는 객체가 남는다. 게임 객체는 이런 상호 참조가 일상이다.
 
-도달성으로 판정하면 순환 참조가 저절로 풀린다. 서로를 가리키고 있어도 바깥에서 아무도 닿을 수 없으면 둘 다 회수 대상이다. 대가는 마킹이 도는 동안 생기는 순간 정지다.
+Mark and Sweep은 세는 대신 **도달할 수 있는지**를 판단한다. 루트에서 출발해 참조를 따라가며 닿는 객체마다 표시를 남기고(Mark), 표시가 없는 객체를 회수한다(Sweep). 두 객체가 서로를 가리키고 있어도 루트에서 닿을 수 없으면 둘 다 회수 대상이다. 순환 참조가 문제가 되지 않는 이유가 여기 있다.
+
+대가는 마킹이 도는 동안 생기는 순간 정지다.
 
 ### UObject가 이어지는 구조
 
-Mark and Sweep이 성립하려면 객체들이 사슬로 이어져 있어야 한다. 루트에서 출발해 따라갈 길이 있어야 도달 가능한지 판정할 수 있다.
+Mark and Sweep에는 두 가지가 필요하다. 탐색을 시작할 **루트**와, 객체들이 서로를 참조하며 만드는 **객체 참조 그래프**다. 루트에서 출발해 그래프를 따라가며 마킹하는 것이 탐색이다.
 
-언리얼은 이 사슬이 소유 관계로 명확하게 잡혀 있다.
+언리얼의 루트 집합은 별도의 전역 컨테이너에 들어 있다.
+
+```cpp
+// CoreUObject/Private/UObject/GarbageCollection.cpp
+static TSet<int32> GRoots;
+```
+
+객체 포인터가 아니라 전역 객체 배열의 **인덱스**를 담는다. `AddToRoot()`를 부르거나 루트 플래그가 붙은 객체의 인덱스가 여기 등록되고, 플래그가 풀리면 빠진다.
+
+그래프 쪽은 소유 관계로 명확하게 잡혀 있다.
 
 <pre class="mermaid">
 flowchart TD
@@ -188,7 +185,7 @@ Outer가 하는 일은 네 가지다.
 - 이름 충돌 방지. 같은 Outer 아래에서는 이름이 겹칠 수 없다
 - 패키지 결정. Outer 체인을 끝까지 타고 올라가면 최상위 `UPackage`가 나오고 이게 저장 단위가 된다
 - `GetWorld()` 조회 경로
-- 소유자 조회
+- 상위 소유자 조회. `GetTypedOuter<T>()`로 Outer 체인을 거슬러 원하는 타입을 찾을 수 있다
 
 `GetPathName()`이 이 체인을 타고 만들어진다.
 
