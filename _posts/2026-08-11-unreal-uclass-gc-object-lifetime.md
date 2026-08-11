@@ -50,6 +50,12 @@ Package          1456
 UHT(Unreal Header Tool)가 빌드 전에 소스를 훑으면서 `UCLASS()` 매크로를 확인한다. 그리고 그 클래스를 리플렉션 시스템에 등록할 코드를 생성해 `.generated.h`에 넣는다. 런타임에는 그 코드가 `UClass` 객체를 만든다.
 
 ```cpp
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Components/ActorComponent.h"
+#include "InventoryComponent.generated.h"   // 반드시 include 중 마지막
+
 UCLASS()
 class UInventoryComponent : public UActorComponent
 {
@@ -61,6 +67,13 @@ public:
 ```
 
 필요한 조건은 세 가지다. UObject를 상속할 것, 헤더에 `.generated.h`를 포함할 것, 클래스 안에 `GENERATED_BODY()`를 넣을 것.
+
+`.generated.h`는 파일명과 같은 이름으로 UHT가 만들어 주는 헤더이고, **include 중 가장 마지막에 와야 한다.** 뒤에 다른 include가 오면 UHT가 빌드를 멈춘다.
+
+```
+#include found after .generated.h file
+- the .generated.h file should always be the last #include in a header
+```
 
 리플렉션이 생기면 얻는 것은 에디터 노출, 직렬화, 블루프린트 상속, 네트워크 복제, `Cast<T>`, 그리고 GC 참조 추적이다. 이 글에서 다루는 것은 마지막 하나다.
 
