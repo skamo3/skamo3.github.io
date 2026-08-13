@@ -21,7 +21,7 @@ mermaid: true
 
 **CDO(Class Default Object)**는 각 `UClass`가 들고 있는 기본값 인스턴스다. `GetDefault<T>()`로 접근할 수 있고, 새 객체를 만들 때 이 CDO를 복사해 시작한다. 언리얼 생성자가 게임을 시작하지 않아도 한 번 도는 이유가 CDO 생성이다. 에디터를 켜는 것만으로 실행된다는 뜻이라, 생성자에서 월드를 찾으면 `GetWorld()`가 null을 반환한다.
 
-CDO는 부모부터 만들어진다. `CreateDefaultObject()`는 부모 CDO가 있는지 확인하고 없으면 부모 쪽부터 만든다. 부모도 자기 부모를 같은 방식으로 확인하므로, `GetDefaultObject()` 호출이 최상위까지 거슬러 올라간 다음 생성이 거기서부터 내려온다.
+CDO는 부모부터 만들어진다. `CreateDefaultObject()`는 부모 CDO가 있는지 확인하고 없으면 부모 쪽부터 만든다. 그 부모도 같은 방식으로 자기 부모를 확인하니 요청이 최상위까지 재귀로 내려간다. 각 클래스는 부모 CDO를 받아 온 뒤에야 자기 CDO를 만들기 때문에, 재귀가 풀리면서 최상위부터 차례로 완성된다.
 
 ```cpp
 // CoreUObject/Private/UObject/Class.cpp
@@ -42,18 +42,25 @@ UObject* UClass::CreateDefaultObject()
 이 순서가 필요한 이유는 자식 CDO를 만들 때 부모 CDO를 원형으로 쓰기 때문이다. 마지막 줄에서 부모 CDO가 `FObjectInitializer`의 인자로 들어간다. 상속받은 프로퍼티의 기본값과 컴포넌트가 이 경로로 넘어오므로, 최상위부터 차례로 만들어야 상속 구조가 유지된다.
 
 <pre class="mermaid">
-flowchart TB
-    subgraph MAKE["② CDO 생성: 기반에서 파생으로"]
-        direction TB
-        U2["UObject CDO"] --> A2["AActor CDO"] --> C2["ACharacter CDO"] --> M2["AMyCharacter CDO"]
-    end
-    subgraph REQ["① GetDefaultObject() 호출: 파생에서 기반으로"]
-        direction TB
-        M1["AMyCharacter"] --> C1["ACharacter"] --> A1["AActor"] --> U1["UObject"]
-    end
+sequenceDiagram
+    participant M as AMyCharacter
+    participant C as ACharacter
+    participant A as AActor
+    participant U as UObject
+
+    M->>C: 부모 CDO 요청
+    C->>A: 부모 CDO 요청
+    A->>U: 부모 CDO 요청
+    U->>U: CDO 생성
+    U-->>A: 반환
+    A->>A: CDO 생성
+    A-->>C: 반환
+    C->>C: CDO 생성
+    C-->>M: 반환
+    M->>M: CDO 생성
 </pre>
 
-상속 사슬을 따라 위에서부터 채워지는 순서다.
+화살표가 오른쪽으로 갈 때는 부모 CDO를 달라는 요청이고, 돌아온 뒤 자기 자신을 향한 화살표에서 CDO가 만들어진다. 상속 사슬의 최상위부터 채워지는 순서가 여기서 나온다.
 
 프로퍼티 목록은 링크드 리스트로 들고 있다.
 
