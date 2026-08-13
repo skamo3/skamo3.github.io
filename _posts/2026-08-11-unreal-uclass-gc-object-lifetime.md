@@ -66,6 +66,8 @@ UPROPERTY(SkipSerialization)
 TObjectPtr<UObject> ClassDefaultObject;
 ```
 
+### CDO의 생성 방법
+
 CDO는 부모부터 만들어진다. `CreateDefaultObject()`는 부모 CDO가 있는지 확인하고 없으면 부모 쪽부터 만든다. 그 부모도 같은 방식으로 자기 부모를 확인하니 요청이 최상위까지 재귀로 내려간다. 각 클래스는 부모 CDO를 받아 온 뒤에야 자기 CDO를 만들기 때문에, 재귀가 풀리면서 최상위부터 차례로 완성된다.
 
 ```cpp
