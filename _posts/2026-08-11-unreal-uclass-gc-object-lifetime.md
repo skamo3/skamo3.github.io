@@ -21,6 +21,38 @@ mermaid: true
 
 **CDO(Class Default Object)**는 각 `UClass`가 들고 있는 기본값 인스턴스다. `GetDefault<T>()`로 접근할 수 있고, 새 객체를 만들 때 이 CDO를 복사해 시작한다. 언리얼 생성자가 게임을 시작하지 않아도 한 번 도는 이유가 CDO 생성이다. 에디터를 켜는 것만으로 실행된다는 뜻이라, 생성자에서 월드를 찾으면 `GetWorld()`가 null을 반환한다.
 
+CDO는 부모부터 만들어진다. `CreateDefaultObject()`가 자기 CDO를 만들기 전에 부모 클래스의 CDO를 먼저 강제로 생성한다.
+
+```cpp
+// CoreUObject/Private/UObject/Class.cpp
+UObject* UClass::CreateDefaultObject()
+{
+    UClass* ParentClass = GetSuperClass();
+    if (ParentClass != NULL)
+    {
+        UObjectForceRegistration(ParentClass);
+        // Force the default object to be constructed if it isn't already
+        ParentDefaultObject = ParentClass->GetDefaultObject();
+    }
+```
+{: .no-collapse}
+
+`GetDefaultObject()` 호출은 맨 아래 클래스에서 시작하지만, 그 안에서 부모를 먼저 부르기 때문에 실제 생성은 최상위부터 내려온다.
+
+<pre class="mermaid">
+flowchart TB
+    subgraph REQ["① 호출은 아래에서 위로"]
+        direction TB
+        M1["AMyCharacter"] --> C1["ACharacter"] --> A1["AActor"] --> U1["UObject"]
+    end
+    subgraph MAKE["② 생성은 위에서 아래로"]
+        direction TB
+        U2["UObject CDO"] --> A2["AActor CDO"] --> C2["ACharacter CDO"] --> M2["AMyCharacter CDO"]
+    end
+</pre>
+
+상속 사슬을 따라 위에서부터 채워지는 순서다. 1편에서 본 생성자 호출 순서와 방향이 같다.
+
 프로퍼티 목록은 링크드 리스트로 들고 있다.
 
 ```cpp
