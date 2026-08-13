@@ -19,15 +19,41 @@ mermaid: true
 - 클래스 플래그
 - CDO
 
+프로퍼티 목록은 링크드 리스트로 들고 있다.
+
+```cpp
+// CoreUObject/Public/UObject/Class.h
+/** In memory only: Linked list of properties from most-derived to base */
+FProperty* PropertyLink;
+/** In memory only: Linked list of object reference properties from most-derived to base */
+FProperty* RefLink;
+```
+
+`PropertyLink`가 전체 프로퍼티 체인이고, `RefLink`는 그중 **다른 UObject를 가리키는 프로퍼티만** 따로 모아둔 체인이다. GC는 `RefLink`를 참고해 오브젝트를 관리한다.
+
+`UClass`가 UObject라는 것은 에디터 콘솔에서 `obj list`를 쳐보면 확인된다. 클래스별 인스턴스 개수를 세어주는 명령인데, 리플렉션 메타데이터 자체가 목록에 잡힌다.
+
+```
+Class            8539
+ScriptStruct     6605
+Function        14721
+Enum             2614
+Package          1456
+```
+
+`UClass` 인스턴스가 8,539개, `UFunction`이 14,721개다. 언리얼은 만들어진 모든 UObject를 **전역 객체 배열**에 등록해 관리하는데, 타입 정보를 표현하는 객체들도 예외가 아니다. `obj list`는 그 배열을 클래스별로 집계한 결과다. `ScriptStruct`가 `Class`와 따로 세어지는 것도 눈에 띄는데, USTRUCT의 런타임 타입 객체가 별개라는 뜻이다.
+
+### CDO의 역할
+
 **CDO(Class Default Object)**는 각 `UClass`가 들고 있는 기본값 인스턴스다. `GetDefault<T>()`로 접근한다. 언리얼 생성자가 게임을 시작하지 않아도 한 번 도는 이유가 CDO 생성이다. 에디터를 켜는 것만으로 실행된다는 뜻이라, 생성자에서 월드를 찾으면 `GetWorld()`가 null을 반환한다.
 
-C++에는 클래스 멤버의 기본값을 런타임에 알아낼 방법이 없다. 값은 생성자 코드 안에 있어서 실행해야 나오고, 리플렉션도 어떤 프로퍼티가 어느 오프셋에 있는지까지만 안다. 생성자를 미리 한 번 실행해 인스턴스를 만들어 두면 기본값을 읽고 쓸 수 있는 데이터로 다룰 수 있다. 그게 CDO다.
+C++에는 클래스 멤버의 기본값을 런타임에 알아낼 방법이 없다. 값은 생성자 코드 안에 있어서 실행해야 나오고, 리플렉션도 어떤 프로퍼티가 어느 오프셋에 있는지까지만 안다. 생성자를 미리 한 번 실행해 인스턴스를 만들어 두면 기본값을 읽고 쓸 수 있는 데이터로 다룰 수 있다.
 
-인스턴스가 하나 있으면 이런 것들이 가능해진다.
+CDO를 이용하면 가능해지는 것
 
-- 새 객체를 만들 때 원형으로 쓴다. 생성자에서 만든 컴포넌트도 CDO에 붙어 인스턴스마다 복제되는 템플릿이 된다
-- 저장할 때 CDO와 값이 다른 프로퍼티만 기록한다. 파일이 작아지고, 클래스 기본값을 고치면 따로 건드리지 않은 인스턴스에 그대로 반영된다
-- 에디터의 클래스 기본값 패널이 편집하는 대상이 CDO다
+- 새 객체 생성의 원형으로 사용. 생성자에서 만든 컴포넌트와 멤버 변수의 기본값 등이 재컴파일 없이 CDO를 참조해 복제 가능하도록 하는 템플릿
+- 저장할 때 CDO와 값이 다른 프로퍼티만 기록. CDO와 다른 점만 기록하면 되기에 저장 내용이 적어지고, 클래스 기본값을 고치면 별도 수정이 없다면 하위 인스턴스도 일괄 반영
+- 에디터의 클래스 기본값 패널이 참조하는 대상이 CDO이다
 
 C++ 클래스를 에디터에서 값만 바꿔 쓰고, 블루프린트로 상속해 또 바꾸고, 레벨에 배치해 다시 바꾸는 구조가 이 위에서 돌아간다. 각 단계는 아래 단계와의 차이만 들고 있으면 된다.
 
@@ -80,30 +106,6 @@ sequenceDiagram
 </pre>
 
 화살표가 오른쪽으로 갈 때는 부모 CDO를 달라는 요청이고, 돌아온 뒤 자기 자신을 향한 화살표에서 CDO가 만들어진다. 상속 사슬의 최상위부터 채워지는 순서가 여기서 나온다.
-
-프로퍼티 목록은 링크드 리스트로 들고 있다.
-
-```cpp
-// CoreUObject/Public/UObject/Class.h
-/** In memory only: Linked list of properties from most-derived to base */
-FProperty* PropertyLink;
-/** In memory only: Linked list of object reference properties from most-derived to base */
-FProperty* RefLink;
-```
-
-`PropertyLink`가 전체 프로퍼티 체인이고, `RefLink`는 그중 **다른 UObject를 가리키는 프로퍼티만** 따로 모아둔 체인이다. GC는 `RefLink`를 참고해 오브젝트를 관리한다.
-
-`UClass`가 UObject라는 것은 에디터 콘솔에서 `obj list`를 쳐보면 확인된다. 클래스별 인스턴스 개수를 세어주는 명령인데, 리플렉션 메타데이터 자체가 목록에 잡힌다.
-
-```
-Class            8539
-ScriptStruct     6605
-Function        14721
-Enum             2614
-Package          1456
-```
-
-`UClass` 인스턴스가 8,539개, `UFunction`이 14,721개다. 언리얼은 만들어진 모든 UObject를 **전역 객체 배열**에 등록해 관리하는데, 타입 정보를 표현하는 객체들도 예외가 아니다. `obj list`는 그 배열을 클래스별로 집계한 결과다. `ScriptStruct`가 `Class`와 따로 세어지는 것도 눈에 띄는데, USTRUCT의 런타임 타입 객체가 별개라는 뜻이다.
 
 ### UCLASS 매크로가 하는 일
 
