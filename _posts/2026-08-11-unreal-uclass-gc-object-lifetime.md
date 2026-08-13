@@ -21,6 +21,17 @@ mermaid: true
 
 **CDO(Class Default Object)**는 각 `UClass`가 들고 있는 기본값 인스턴스다. `GetDefault<T>()`로 접근할 수 있고, 새 객체를 만들 때 이 CDO를 복사해 시작한다. 언리얼 생성자가 게임을 시작하지 않아도 한 번 도는 이유가 CDO 생성이다. 에디터를 켜는 것만으로 실행된다는 뜻이라, 생성자에서 월드를 찾으면 `GetWorld()`가 null을 반환한다.
 
+CDO는 `UClass`의 멤버로 들고 있다.
+
+```cpp
+// CoreUObject/Public/UObject/Class.h
+/** The class default object; used for delta serialization and object initialization */
+UPROPERTY(SkipSerialization)
+TObjectPtr<UObject> ClassDefaultObject;
+```
+
+주석이 용도를 적어뒀다. 델타 직렬화와 객체 초기화다. 언리얼은 객체를 저장할 때 전체를 쓰지 않고 **CDO와 값이 다른 프로퍼티만** 기록한다. 레벨에 배치한 액터가 기본값 그대로라면 저장할 내용이 거의 없고, 나중에 클래스 기본값을 고치면 따로 건드리지 않은 인스턴스에는 그 변경이 그대로 반영된다.
+
 CDO는 부모부터 만들어진다. `CreateDefaultObject()`는 부모 CDO가 있는지 확인하고 없으면 부모 쪽부터 만든다. 그 부모도 같은 방식으로 자기 부모를 확인하니 요청이 최상위까지 재귀로 내려간다. 각 클래스는 부모 CDO를 받아 온 뒤에야 자기 CDO를 만들기 때문에, 재귀가 풀리면서 최상위부터 차례로 완성된다.
 
 ```cpp
