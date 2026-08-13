@@ -149,8 +149,6 @@ TObjectPtr<AWeapon> EquippedWeapon;
 
 ### TWeakObjectPtr
 
-`weak_ptr`과 이름도 목적도 같다. 대상을 살려두지 않고, 쓰기 전에 유효성을 확인해야 한다. 그런데 구현은 전혀 다르다.
-
 `weak_ptr` 같은 목적으로 대상을 참조하지 않으면서 캐싱해두기 좋고, 사용 전 유효성 검사를 해야 한다. 다만 내부 구현은 기존 `weak_ptr`과 다르다.
 
 `TWeakObjectPtr`은 참조하는 자원의 포인터를 들고 있지 않는 형태이다. 언리얼 엔진은 전역 UObject 배열로 객체를 관리한다. 그래서 `TWeakObjectPtr`도 내부적으로 타겟으로 하는 객체의 전역 배열에서의 인덱스와 세대 번호를 이용해 관리한다.
