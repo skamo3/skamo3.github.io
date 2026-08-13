@@ -175,7 +175,7 @@ flowchart TD
 - 크기가 작다. 정수 두 개라 8바이트이고, 64비트에서 `weak_ptr`은 포인터 두 개라 16바이트다
 - 대상이 죽은 뒤 따로 남는 메모리가 없다. `weak_ptr`은 약참조가 살아 있는 동안 카운트 정보를 계속 붙들고 있어야 하지만, 전역 배열은 UObject 관리를 위해 어차피 유지되는 구조라 여기에 얹어 갈 뿐이다
 
-사용법도 다르다. `weak_ptr`은 `lock()`으로 `shared_ptr`을 얻어야 자원에 접근할 수 있지만, `TWeakObjectPtr`은 유효성 검사 후 바로 `Get()`으로 원시 포인터를 얻어 쓴다.
+사용법도 다르다. `weak_ptr`은 `lock()`으로 `shared_ptr`을 얻어야 자원에 직접 접근할 수 있지만, `TWeakObjectPtr`은 `Get()`으로 원시 포인터를 받아 바로 쓴다.
 
 ```cpp
 TWeakObjectPtr<AActor> Weak = SomeActor;
@@ -185,13 +185,15 @@ if (AActor* Actor = Weak.Get())
 }
 ```
 
-`IsValid()`로 먼저 확인하고 `Get()`을 부르는 것도 된다. 다만 둘 다 전역 배열을 찾아보는 같은 작업이라 조회가 두 번 일어난다. 언리얼도 이 부분을 신경 써서 `operator bool`을 아예 막아뒀다.
+`IsValid()`라는 함수도 있지만 권장되지는 않는다. `IsValid()`와 `Get()`은 둘 다 전역 배열에서 슬롯을 찾아 세대 번호를 맞춰보는 같은 작업이라, 먼저 확인하고 다시 꺼내면 같은 조회를 두 번 하게 된다. 언리얼도 이 부분을 신경 써서 `operator bool`을 아예 막아뒀다.
 
 ```cpp
 // WeakObjectPtrTemplates.h
 // This is explicitly not added to avoid resolving weak pointers too often - use Get() once in a function.
 explicit operator bool() const = delete;
 ```
+
+`if (Weak)` 같은 검사를 못 쓰게 해두고, 한 함수 안에서 `Get()`을 한 번만 부르라고 주석에 적어두었다.
 
 한 번 얻은 원시 포인터를 그 함수 안에서 쓰는 것은 안전하다. GC가 도는 시점이 정해져 있어 게임 스레드 실행 도중에 갑자기 자원이 회수되지 않기 때문이다. 프레임을 넘겨 캐싱해둔 경우에는 그 사이에 회수될 수 있으니 쓸 때마다 다시 확인해야 한다.
 
