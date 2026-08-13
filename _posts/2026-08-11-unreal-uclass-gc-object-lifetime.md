@@ -21,23 +21,25 @@ mermaid: true
 
 **CDO(Class Default Object)**는 각 `UClass`가 들고 있는 기본값 인스턴스다. `GetDefault<T>()`로 접근할 수 있고, 새 객체를 만들 때 이 CDO를 복사해 시작한다. 언리얼 생성자가 게임을 시작하지 않아도 한 번 도는 이유가 CDO 생성이다. 에디터를 켜는 것만으로 실행된다는 뜻이라, 생성자에서 월드를 찾으면 `GetWorld()`가 null을 반환한다.
 
-CDO는 부모부터 만들어진다. `CreateDefaultObject()`가 자기 CDO를 만들기 전에 부모 클래스의 CDO를 먼저 강제로 생성한다.
+CDO는 부모부터 만들어진다. `CreateDefaultObject()`는 부모 CDO가 있는지 확인하고 없으면 부모 쪽부터 만든다. 부모도 자기 부모를 같은 방식으로 확인하니, 호출은 최상위까지 거슬러 올라갔다가 차례로 내려온다.
 
 ```cpp
 // CoreUObject/Private/UObject/Class.cpp
 UObject* UClass::CreateDefaultObject()
 {
     UClass* ParentClass = GetSuperClass();
+    UObject* ParentDefaultObject = NULL;
     if (ParentClass != NULL)
     {
-        UObjectForceRegistration(ParentClass);
         // Force the default object to be constructed if it isn't already
         ParentDefaultObject = ParentClass->GetDefaultObject();
     }
+    ...
+    (*ClassConstructor)(FObjectInitializer(ClassDefaultObject, ParentDefaultObject, InitOptions));
 ```
 {: .no-collapse}
 
-`GetDefaultObject()` 호출은 맨 아래 클래스에서 시작하지만, 그 안에서 부모를 먼저 부르기 때문에 실제 생성은 최상위부터 내려온다.
+이 순서가 필요한 이유는 자식 CDO를 만들 때 부모 CDO를 원형으로 쓰기 때문이다. 마지막 줄에서 부모 CDO가 `FObjectInitializer`의 인자로 들어간다. 상속받은 프로퍼티의 기본값과 컴포넌트가 이 경로로 넘어오므로, 최상위부터 차례로 만들어야 상속 구조가 유지된다.
 
 <pre class="mermaid">
 flowchart TB
