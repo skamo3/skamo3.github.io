@@ -17,7 +17,7 @@ RAII는 객체를 생성할 때 자원을 초기화하고, 객체가 삭제되�
 
 ### unique_ptr
 
-포인터에 대한 소유권을 하나만 유지한다. 여러 곳에서 참조하거나 저장해둘 수 없고 단 한 곳에서만 소유할 수 있게 설계되어있다. 다른 곳에서 소유할 수 없고, 소유권의 이전만 가능하다.
+포인터에 대한 소유권을 하나만 유지한다. 가리키는 자원을 참조해 사용하는 것은 가능하지만 여러 곳에서 나눠 저장해둘 수 없고, 단 한 곳에서만 소유할 수 있게 설계되어있다. 다른 곳에서 소유할 수 없고, 소유권의 이전만 가능하다.
 
 ```cpp
 std::unique_ptr<Data> A = std::make_unique<Data>();
@@ -57,7 +57,7 @@ flowchart LR
     B -->|A를 소유| A
 </pre>
 
-바깥에서 A와 B를 가리키던 `shared_ptr`이 전부 사라져도, 서로가 서로를 들고 있어 참조 카운트가 1로 남는다. 0이 되지 않으니 둘 다 파괴되지 않고 메모리에 그대로 남는다. 접근할 방법도 없으니 해제할 수단이 사라진다.
+바깥에서 A와 B를 가리키던 `shared_ptr`이 전부 사라져도, 서로가 서로를 들고 있어 참조 카운트가 1로 남는다. 0이 되지 않으니 둘 다 해제되지 않고 메모리에 그대로 남는다. 접근할 방법도 없으니 해제할 수단이 사라진다.
 
 ### weak_ptr
 
@@ -75,7 +75,7 @@ if (auto Locked = Weak.lock())
 
 ### 약참조 카운트
 
-`shared_ptr`은 내부적으로 두 개의 카운트를 관리한다. 소유권을 세는 강참조 카운트와, `weak_ptr`의 개수를 세는 약참조 카운트가 따로 있다.
+`shared_ptr`은 내부적으로 두 개의 카운트를 관리한다. 소유권을 세는 강참조 카운트와, 유효성을 물어볼 쪽을 세는 약참조 카운트가 따로 있다.
 
 강참조가 0이 되어서 자원이 해제되면 `weak_ptr`이 유효성 검사를 위해 접근했을 때 이미 사라진 자리에 접근하게 될 수 있다. `shared_ptr`의 참조가 전부 사라진 후에도 `weak_ptr`은 자원의 유효성 검사를 해야 하고, 이를 약참조 카운팅으로 유지하는 것이다.
 
@@ -97,20 +97,33 @@ if (auto Locked = Weak.lock())
 
 ### 일반 C++ 객체용
 
-일반 객체용 포인터는 기존의 C++ 표준 스마트 포인터와 같다. 참조 카운트로 수명을 관리하고 메모리 누수를 방지한다. 단 두 가지 차이점이 있다. 스레드 안전성과 `TSharedRef`다.
+일반 객체용 포인터는 기존의 C++ 표준 스마트 포인터와 같다. 참조 카운트로 수명을 관리하고 메모리 누수를 방지한다. 동작이 달라지는 지점은 두 가지다. 스레드 안전성과 `TSharedRef`다.
+
+이름과 사용법은 조금씩 다르다. 언리얼이 표준 라이브러리보다 먼저 자체 구현을 갖고 있었기 때문에 대응하는 기능이 다른 이름으로 남아 있다.
+
+| 표준 | 언리얼 |
+|---|---|
+| `make_shared` | `MakeShared` |
+| `weak_ptr::lock()` | `TWeakPtr::Pin()` |
+| `enable_shared_from_this` | `TSharedFromThis` |
+| `static_pointer_cast` | `StaticCastSharedPtr` |
+
+`MakeShared`는 반환 타입도 다르다. `make_shared`가 `shared_ptr`을 돌려주는 것과 달리 널이 될 수 없는 `TSharedRef`를 돌려준다.
 
 ### 스레드 안전성 선택
 
-언리얼 엔진은 기본적으로 멀티 스레드 환경에서 사용될 가능성이 높다. 표준 `shared_ptr`은 여러 스레드가 동시에 참조 카운트를 바꿔도 어긋나지 않도록 보호한다. 이를 보호하는 과정에서 비용이 생기게 되는데, 단일 스레드에서만 쓰는 것이 확실할 때에도 끌 수 없고 성능 저하로 이어질 수 있다.
+언리얼 엔진은 기본적으로 멀티 스레드 환경에서 사용될 가능성이 높다. 그래서 `TSharedPtr`도 기본값이 `ESPMode::ThreadSafe`로 잡혀 있다.
 
-언리얼 `TSharedPtr`은 템플릿 인자를 이용해 스레드 안전성을 사용자가 직접 선택할 수 있도록 제공한다.
+표준 `shared_ptr`은 여러 스레드가 동시에 참조 카운트를 바꿔도 어긋나지 않도록 보호한다. 이를 보호하는 과정에서 비용이 생기게 되는데, 단일 스레드에서만 쓰는 것이 확실할 때에도 끌 수 없고 성능 저하로 이어질 수 있다.
+
+언리얼 `TSharedPtr`은 템플릿 인자를 이용해 스레드 안전성을 사용자가 직접 선택할 수 있도록 제공한다. 기본은 안전한 쪽으로 두고, 단일 스레드가 확실한 자리만 골라서 끄는 방식이다.
 
 ```cpp
-// 기본값
+// 기본값, ESPMode::ThreadSafe
 TSharedPtr<FMyData> A = MakeShared<FMyData>();
 
 // 단일 스레드 전용, 보호 비용이 빠진다
-TSharedPtr<FMyData, ESPMode::NotThreadSafe> B;
+TSharedPtr<FMyData, ESPMode::NotThreadSafe> B = MakeShared<FMyData, ESPMode::NotThreadSafe>();
 ```
 
 컴파일 타임에 결정되므로 런타임 분기는 생기지 않는다.
@@ -132,16 +145,16 @@ TSharedRef<FMyData> Never = MakeShared<FMyData>();  // 널이 될 수 없다
 
 ### TObjectPtr
 
-UObject를 가리키는 가장 기본적인 포인터이다. 별도로 참조를 하거나 하는 역할은 아니다. UE4까지는 원시 포인터를 사용했고, UE5부터 언리얼 엔진에서 제공되면서 사용된 개념이다.
+UObject를 가리키는 가장 기본적인 포인터이다. 소유권을 갖거나 참조 카운트를 올리는 역할은 아니다. UE4까지는 원시 포인터를 사용했고, UE5부터 언리얼 엔진에서 제공되면서 사용된 개념이다.
 
-`UPROPERTY()`와 함께 쓰일 때 리플렉션 시스템이 해당 멤버를 UObject 참조로 인식하고, GC에서 참조할 수 있도록 연결한다. 소유권이 아닌 GC의 그래프를 만드는 것이 주 역할이다.
+`UPROPERTY()`와 함께 쓰일 때 리플렉션 시스템이 해당 멤버를 UObject 참조로 인식하고, GC가 도달 가능성을 계산할 때 이 참조를 따라가도록 연결한다. 소유권이 아닌 GC의 그래프를 만드는 것이 주 역할이다.
 
 ```cpp
 UPROPERTY()
 TObjectPtr<AWeapon> EquippedWeapon;
 ```
 
-`TObjectPtr`은 마지막 참조가 끊겨도 자원을 정리하거나 하는 등의 동작이 생기진 않는다. 다음 GC가 돌 때 도달 불가능 판정으로 회수할 뿐, 자체적으로 자원을 관리하지 않는다.
+`TObjectPtr`은 마지막 참조가 끊겨도 객체를 정리하거나 하는 등의 동작이 생기진 않는다. 다음 GC가 돌 때 도달 불가능 판정으로 회수할 뿐, 자체적으로 수명을 관리하지 않는다.
 
 `UPROPERTY`를 붙인 원시 포인터와 비교하면 GC 동작은 같다. 리플렉션 시스템이 인식하는 방식도 동일하다. 차이는 에디터 빌드에 있는데, `TObjectPtr`은 아직 로드되지 않은 참조를 담아두었다가 처음 접근하는 순간 해석할 수 있다. 쿠킹된 빌드에서는 이 기능이 꺼지고 내부 핸들 타입이 `UObject*` 그 자체가 되어, 크기도 동작도 원시 포인터와 같아진다.
 
@@ -151,13 +164,13 @@ TObjectPtr<AWeapon> EquippedWeapon;
 
 `weak_ptr` 같은 목적으로 대상을 참조하지 않으면서 캐싱해두기 좋고, 사용 전 유효성 검사를 해야 한다. 다만 내부 구현은 기존 `weak_ptr`과 다르다.
 
-`TWeakObjectPtr`은 참조하는 자원의 포인터를 들고 있지 않는 형태이다. 언리얼 엔진은 전역 UObject 배열로 객체를 관리한다. 그래서 `TWeakObjectPtr`도 내부적으로 타겟으로 하는 객체의 전역 배열에서의 인덱스와 세대 번호를 이용해 관리한다.
+`TWeakObjectPtr`은 참조하는 객체의 포인터를 들고 있지 않는 형태이다. 언리얼 엔진은 전역 UObject 배열로 객체를 관리한다. 그래서 `TWeakObjectPtr`도 내부적으로 타겟으로 하는 객체의 전역 배열에서의 인덱스와 세대 번호를 이용해 관리한다.
 
 <pre class="mermaid">
 flowchart TD
     subgraph STD["std::weak_ptr"]
         W["weak_ptr<br/>카운트 정보 포인터"] --> CB["카운트 정보<br/>강참조 / 약참조 카운트"]
-        CB -.-> OBJ["객체"]
+        CB -.-> OBJ["자원"]
     end
     subgraph UE["TWeakObjectPtr"]
         TW["TWeakObjectPtr<br/>인덱스 + 세대 번호"] --> ARR["전역 UObject 배열"]
@@ -173,7 +186,7 @@ flowchart TD
 - 크기가 작다. 정수 두 개라 8바이트이고, 64비트에서 `weak_ptr`은 포인터 두 개라 16바이트다
 - 대상이 죽은 뒤 따로 남는 메모리가 없다. `weak_ptr`은 약참조가 살아 있는 동안 카운트 정보를 계속 붙들고 있어야 하지만, 전역 배열은 UObject 관리를 위해 어차피 유지되는 구조라 여기에 얹어 갈 뿐이다
 
-사용법도 다르다. `weak_ptr`은 `lock()`으로 `shared_ptr`을 얻어야 자원에 직접 접근할 수 있지만, `TWeakObjectPtr`은 `Get()`으로 원시 포인터를 받아 바로 쓴다.
+사용법도 다르다. `weak_ptr`은 `lock()`으로 `shared_ptr`을 얻어야 객체에 직접 접근할 수 있지만, `TWeakObjectPtr`은 `Get()`으로 원시 포인터를 받아 바로 쓴다.
 
 ```cpp
 TWeakObjectPtr<AActor> Weak = SomeActor;
@@ -193,7 +206,7 @@ explicit operator bool() const = delete;
 
 `if (Weak)` 같은 검사를 못 쓰게 해두고, 한 함수 안에서 `Get()`을 한 번만 부르라고 주석에 적어두었다.
 
-한 번 얻은 원시 포인터를 그 함수 안에서 쓰는 것은 안전하다. GC가 도는 시점이 정해져 있어 게임 스레드 실행 도중에 갑자기 자원이 회수되지 않기 때문이다. 프레임을 넘겨 캐싱해둔 경우에는 그 사이에 회수될 수 있으니 쓸 때마다 다시 확인해야 한다.
+한 번 얻은 원시 포인터를 그 함수 안에서 쓰는 것은 안전하다. GC가 도는 시점이 정해져 있어 게임 스레드 실행 도중에 갑자기 객체가 회수되지 않기 때문이다. 프레임을 넘겨 캐싱해둔 경우에는 그 사이에 회수될 수 있으니 쓸 때마다 다시 확인해야 한다.
 
 접근하는 동안 확실히 살려두어야 한다면 `Pin()`으로 `TStrongObjectPtr`을 얻을 수 있다. `weak_ptr`의 `lock()`에 대응하는 동작이다.
 
@@ -201,7 +214,7 @@ explicit operator bool() const = delete;
 
 언리얼 엔진에서 애셋을 관리하기 위해 사용되는 포인터이다.
 
-기존 `TObjectPtr`이나 원시 포인터를 이용하면 참조된 애셋 객체를 바로 디스크에서 로드해온다. 단순한 객체라면 큰 문제가 없지만 하나의 객체가 여러 애셋을 참조하고 있는 경우라면 필요한 애셋을 참조와 동시에 로드하게 되고 이는 성능 저하로 이어질 수 있다. 그래서 `TSoftObjectPtr`은 내부적으로 애셋의 경로를 저장해두고, 필요한 시점에 로드하는 방식을 이용한다.
+기존 `TObjectPtr`이나 원시 포인터로 애셋을 참조하면 하드 레퍼런스가 된다. 그 참조를 들고 있는 객체가 로드될 때 참조된 애셋까지 함께 딸려 온다. 단순한 객체라면 큰 문제가 없지만 하나의 객체가 여러 애셋을 참조하고 있는 경우라면 당장 쓰지 않을 애셋까지 한꺼번에 로드하게 되고 이는 성능 저하로 이어질 수 있다. 그래서 `TSoftObjectPtr`은 내부적으로 애셋의 경로를 저장해두고, 필요한 시점에 로드하는 방식을 이용한다.
 
 ```cpp
 UPROPERTY(EditAnywhere)
@@ -230,19 +243,6 @@ class FMyNonUObjectClass
 
 `shared_ptr`과 다른 점은 마지막이다. 카운트가 0이 되어도 그 자리에서 파괴되지 않는다. 루트 집합에서 빠질 뿐이고, 다른 참조가 없다면 다음 GC 때 회수된다.
 
-## 정리 표
-
-| 포인터 | 대상 | 소유 여부 | 표준 대응 |
-|---|---|---|---|
-| `TSharedPtr` | 비UObject | 공유 소유 | `shared_ptr` |
-| `TSharedRef` | 비UObject | 공유 소유, 널 불가 | 없음 |
-| `TWeakPtr` | 비UObject | 없음 | `weak_ptr` |
-| `TUniquePtr` | 비UObject | 단독 소유 | `unique_ptr` |
-| `TObjectPtr` | UObject | 소유 없음, GC 참조 | 없음 |
-| `TWeakObjectPtr` | UObject | 없음 | `weak_ptr`과 목적은 같고 구현이 다름 |
-| `TSoftObjectPtr` | UObject | 없음, 경로 보관 | 없음 |
-| `TStrongObjectPtr` | UObject | GC 루트로 고정 | `shared_ptr`과 유사 |
-
 ## 선택 기준
 
 - 대상이 UObject가 아니면 `TSharedPtr` 계열
@@ -252,6 +252,17 @@ class FMyNonUObjectClass
 - `UPROPERTY`를 못 쓰는 자리에서 UObject를 붙들어야 하면 `TStrongObjectPtr`
 
 ## 정리
+
+| 포인터 | 대상 | 소유 여부 | 비고 |
+|---|---|---|---|
+| `TSharedPtr` | 비UObject | 공유 소유 | `shared_ptr`과 같음 |
+| `TSharedRef` | 비UObject | 공유 소유, 널 불가 | 표준에 없는 타입 |
+| `TWeakPtr` | 비UObject | 없음 | `weak_ptr`과 같고 `lock()`이 `Pin()` |
+| `TUniquePtr` | 비UObject | 단독 소유 | `unique_ptr`과 같음 |
+| `TObjectPtr` | UObject | 소유 없음, GC 참조 | UE5부터. 쿠킹 빌드에서는 원시 포인터 |
+| `TWeakObjectPtr` | UObject | 없음 | 목적은 `weak_ptr`과 같고 구현이 다름 |
+| `TSoftObjectPtr` | UObject | 없음, 경로 보관 | 로드 전 애셋을 가리킬 수 있음 |
+| `TStrongObjectPtr` | UObject | GC 루트로 고정 | `shared_ptr`처럼 붙들어둠 |
 
 - 언리얼 스마트 포인터는 대상이 UObject인지에 따라 두 계열로 갈린다. 수명을 참조 카운트가 정하느냐 GC가 정하느냐의 차이다
 - 일반 객체용은 표준과 구조가 같고, 스레드 안전성을 컴파일 타임에 고를 수 있다는 점과 널이 될 수 없는 `TSharedRef`가 다르다
