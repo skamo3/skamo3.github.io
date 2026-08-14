@@ -99,16 +99,14 @@ if (auto Locked = Weak.lock())
 
 일반 객체용 포인터는 기존의 C++ 표준 스마트 포인터와 같다. 표준과 Boost의 스마트 포인터를 본떠 만들어졌고, 참조 카운트로 수명을 관리하고 메모리 누수를 방지한다.
 
-이름은 언리얼 코드베이스 규칙에 맞춰 바뀌었다.
-
-| 표준 | 언리얼 |
+| 언리얼 | 표준 |
 |---|---|
-| `make_shared` | `MakeShared` |
-| `weak_ptr::lock()` | `TWeakPtr::Pin()` |
-| `enable_shared_from_this` | `TSharedFromThis` |
-| `static_pointer_cast` | `StaticCastSharedPtr` |
+| `TSharedPtr` | `shared_ptr` |
+| `TWeakPtr` | `weak_ptr` |
+| `TUniquePtr` | `unique_ptr` |
+| `TSharedRef` | 없음 |
 
-동작이 달라지는 지점은 두 가지다. 스레드 안전성과 `TSharedRef`다.
+기존 C++ 스마트 포인터와 차이점은 두 가지가 있다. 스레드 안전성과 `TSharedRef`다.
 
 ### 스레드 안전성 선택
 
