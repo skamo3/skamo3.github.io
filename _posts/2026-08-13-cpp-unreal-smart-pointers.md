@@ -75,7 +75,7 @@ if (auto Locked = Weak.lock())
 
 ### 약참조 카운트
 
-`shared_ptr`은 내부적으로 두 개의 카운트를 관리한다. 소유권을 세는 강참조 카운트와, 유효성을 물어볼 쪽을 세는 약참조 카운트가 따로 있다.
+`shared_ptr`은 내부적으로 두 개의 카운트를 관리한다. 소유권을 세는 강참조 카운트와, 유효성을 체크할 때 사용하는 약참조 카운트가 따로 있다.
 
 강참조가 0이 되어서 자원이 해제되면 `weak_ptr`이 유효성 검사를 위해 접근했을 때 이미 사라진 자리에 접근하게 될 수 있다. `shared_ptr`의 참조가 전부 사라진 후에도 `weak_ptr`은 자원의 유효성 검사를 해야 하고, 이를 약참조 카운팅으로 유지하는 것이다.
 
@@ -97,9 +97,15 @@ if (auto Locked = Weak.lock())
 
 ### 일반 C++ 객체용
 
-일반 객체용 포인터는 기존의 C++ 표준 스마트 포인터와 같다. 참조 카운트로 수명을 관리하고 메모리 누수를 방지한다. 동작이 달라지는 지점은 두 가지다. 스레드 안전성과 `TSharedRef`다.
+일반 객체용 포인터는 기존의 C++ 표준 스마트 포인터와 같다. 참조 카운트로 수명을 관리하고 메모리 누수를 방지한다. 엔진 헤더에도 표준과 Boost를 본떠 만들었다고 적혀 있다.
 
-이름과 사용법은 조금씩 다르다. 언리얼이 표준 라이브러리보다 먼저 자체 구현을 갖고 있었기 때문에 대응하는 기능이 다른 이름으로 남아 있다.
+```cpp
+// Templates/SharedPointer.h
+// This implementation is modeled after the C++0x standard library's shared_ptr
+// as well as Boost smart pointers.
+```
+
+같은 헤더에 표준 구현과 다른 점도 정리되어 있는데, 대부분은 이름과 지원 범위 문제다. `lock()` 대신 `Pin()`을 쓰고, `use_count()` 같은 일부 기능이 빠져 있고, 예외와 커스텀 할당자를 지원하지 않는다.
 
 | 표준 | 언리얼 |
 |---|---|
@@ -109,6 +115,8 @@ if (auto Locked = Weak.lock())
 | `static_pointer_cast` | `StaticCastSharedPtr` |
 
 `MakeShared`는 반환 타입도 다르다. `make_shared`가 `shared_ptr`을 돌려주는 것과 달리 널이 될 수 없는 `TSharedRef`를 돌려준다.
+
+동작이 달라지는 지점은 두 가지다. 스레드 안전성과 `TSharedRef`다.
 
 ### 스레드 안전성 선택
 
