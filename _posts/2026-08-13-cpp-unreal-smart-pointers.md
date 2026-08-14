@@ -97,24 +97,7 @@ if (auto Locked = Weak.lock())
 
 ### 일반 C++ 객체용
 
-일반 객체용 포인터는 기존의 C++ 표준 스마트 포인터와 같다. 참조 카운트로 수명을 관리하고 메모리 누수를 방지한다. 엔진 헤더에도 표준과 Boost를 본떠 만들었다고 적혀 있다.
-
-```cpp
-// Templates/SharedPointer.h
-// This implementation is modeled after the C++0x standard library's shared_ptr
-// as well as Boost smart pointers.
-```
-
-같은 헤더에 표준 구현과 다른 점도 정리되어 있는데, 대부분은 이름과 지원 범위 문제다. `lock()` 대신 `Pin()`을 쓰고, `use_count()` 같은 일부 기능이 빠져 있고, 예외와 커스텀 할당자를 지원하지 않는다.
-
-| 표준 | 언리얼 |
-|---|---|
-| `make_shared` | `MakeShared` |
-| `weak_ptr::lock()` | `TWeakPtr::Pin()` |
-| `enable_shared_from_this` | `TSharedFromThis` |
-| `static_pointer_cast` | `StaticCastSharedPtr` |
-
-`MakeShared`는 반환 타입도 다르다. `make_shared`가 `shared_ptr`을 돌려주는 것과 달리 널이 될 수 없는 `TSharedRef`를 돌려준다.
+일반 객체용 포인터는 기존의 C++ 표준 스마트 포인터와 같다. 표준과 Boost의 스마트 포인터를 본떠 만들어졌고, 참조 카운트로 수명을 관리하고 메모리 누수를 방지한다.
 
 동작이 달라지는 지점은 두 가지다. 스레드 안전성과 `TSharedRef`다.
 
