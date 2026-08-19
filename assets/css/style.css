@@ -1057,15 +1057,17 @@ body.modal-open { overflow: hidden; }
   .project-detail .indent-1 { margin-left: 0; }
   .project-detail .indent-2 { margin-left: 10px; }
   .project-detail .indent-3 { margin-left: 18px; }
-  .link-card { padding: 14px; gap: 12px; }
-  .link-card-logo { width: 44px; height: 44px; }
-  .link-card-name,
-  .project-modal .modal-body .link-card-name { font-size: 14.5px; }
-  .link-card-desc,
-  .project-modal .modal-body .link-card-desc { font-size: 13px; }
-  .link-card-url, .link-card .link-card-date,
-  .project-modal .modal-body .link-card-url,
-  .project-modal .modal-body .link-card-date { font-size: 12px; }
+  /* 링크 배너는 본문 흐름 중간의 보조 요소라 본문보다 한 단계 작게 둔다.
+     카드 안쪽도 <p>라 .project-detail p / .modal-body p 에 밀린다 — .link-card 를 붙여 우선순위를 올린다 */
+  .link-card { padding: 11px 12px; gap: 10px; border-radius: 8px; }
+  .link-card-logo { width: 34px; height: 34px; }
+  .link-card .link-card-name,
+  .project-modal .link-card .link-card-name { font-size: 13px; line-height: 1.4; margin-bottom: 3px; }
+  .link-card .link-card-desc,
+  .project-modal .link-card .link-card-desc { font-size: 11.5px; line-height: 1.45; margin-bottom: 5px; }
+  .link-card .link-card-url, .link-card .link-card-date,
+  .project-modal .link-card .link-card-url,
+  .project-modal .link-card .link-card-date { font-size: 10px; line-height: 1.4; }
   .project-toc { padding: 14px 16px; }
   .project-toc .toc-label,
   .project-modal .modal-body .toc-label { font-size: 12px; }
