@@ -49,6 +49,31 @@
   #error { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:6; display:none;
     max-width:520px; padding:16px 20px; background:rgba(40,10,20,0.85); border:1px solid var(--magenta);
     border-radius:10px; font-size:13px; line-height:1.6; color:#ffd; }
+
+  /* ── 모바일: 240px 고정 사이드바를 두면 스테이지가 100px대로 남는다.
+     챕터 목록을 가로로 스크롤되는 상단 바로 접고 3D는 남는 높이를 다 쓴다 ── */
+  @media (max-width: 760px) {
+    html, body { height:100dvh; }
+    #layout { flex-direction:column; height:100dvh; }
+    #sidebar { width:100%; flex:0 0 auto; padding:8px 0 6px;
+      border-right:none; border-bottom:1px solid var(--line); overflow:visible; }
+    #sidebar .brand { display:none; }
+    #sidebar .site-back { padding:0 12px 8px; }
+    #nav { display:flex; align-items:center; gap:6px; overflow-x:auto;
+      padding:0 12px 2px; scrollbar-width:none; }
+    #nav::-webkit-scrollbar { display:none; }
+    .nav-chapter { flex:0 0 auto; padding:0 2px 0 6px; }
+    .nav-item { flex:0 0 auto; padding:6px 12px; font-size:12px; white-space:nowrap;
+      border-left:none; border:1px solid rgba(255,255,255,0.12); border-radius:999px; }
+    .nav-item.active { border-color:var(--cyan); }
+    .nav-item .soon { display:none; }
+    #stage { flex:1 1 auto; min-height:0; }
+    #topbar { left:10px; top:10px; font-size:12px; padding:5px 10px; }
+    #post-cards { left:10px; right:10px; bottom:10px; align-items:stretch; }
+    .post-card { max-width:none; }
+    .post-card .title { white-space:normal; }
+    #error { max-width:calc(100% - 32px); font-size:12px; }
+  }
 </style>
 </head>
 <body>

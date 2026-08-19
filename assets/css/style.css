@@ -135,7 +135,9 @@ a { color: inherit; text-decoration: none; }
 
 /* hero */
 .hero {
-  padding: 96px 0 56px;
+  /* .wrap 과 같은 요소에 붙으므로 단축 속성으로 좌우 패딩을 덮지 않는다 */
+  padding-top: 96px;
+  padding-bottom: 56px;
 }
 .hero-grid {
   display: flex;
@@ -211,7 +213,7 @@ a { color: inherit; text-decoration: none; }
 .btn-ghost { color: var(--text); }
 
 /* section */
-.section { padding: 56px 0; border-top: 0.5px solid var(--border); }
+.section { padding-top: 56px; padding-bottom: 56px; border-top: 0.5px solid var(--border); }
 .section-label { font-size: 15.5px; color: var(--text-muted); font-weight: 700; letter-spacing: .06em; margin-bottom: 8px; }
 .section h2 { font-size: 34px; margin-bottom: 20px; }
 
@@ -350,8 +352,9 @@ a { color: inherit; text-decoration: none; }
     margin-right: 0; padding-right: 0;
     margin-left: -24px; padding-left: 24px;
   }
-  .tv-item.left .tv-dot, .tv-item.right .tv-dot { left: -22px; right: auto; }
-  .tv-item.left .tv-head::after, .tv-item.right .tv-head::after { left: -6px; right: auto; width: 16px; }
+  /* 점을 세로 레일(왼쪽 5px) 위에 올리고, 점에서 글자까지 점선을 잇는다 */
+  .tv-item.left .tv-dot, .tv-item.right .tv-dot { left: -3px; right: auto; }
+  .tv-item.left .tv-head::after, .tv-item.right .tv-head::after { left: 13px; right: auto; width: 11px; }
 }
 
 /* projects */
@@ -916,12 +919,19 @@ body.modal-open { overflow: hidden; }
 .project-modal .modal-body ul,
 .project-modal .modal-body ol { font-size: 13.99px; }
 
+/* ── 모바일 레이아웃 ───────────────────────────────────────────
+   데스크톱 기준으로 잡은 글자 크기·여백을 좁은 화면용으로 다시 잡는다.
+   본문 21px / 프로젝트 상세 10~12px처럼 양극단으로 벌어져 있던 값을
+   14~17px 구간으로 모아 밀도를 맞추는 게 목적. */
 @media (max-width: 640px) {
   html, body { overflow-x: hidden; }
-  .hero { padding: 56px 0 40px; }
-  .hero h1 { font-size: 39px; }
-  .hero .eyebrow { font-size: 18px; }
+  body { font-size: 17px; line-height: 1.75; }
+  .wrap { padding: 0 18px; }
+
+  /* nav */
   .nav-toggle { display: flex; }
+  .site-nav .logo { font-size: 17px; }
+  .site-nav .nav-right { gap: 12px; }
   .site-nav .links {
     display: none;
     position: absolute;
@@ -933,10 +943,135 @@ body.modal-open { overflow: hidden; }
     gap: 4px;
     background: var(--bg);
     border-bottom: 0.5px solid var(--border);
-    padding: 12px 24px 16px;
+    padding: 12px 18px 16px;
   }
   .site-nav.nav-open .links { display: flex; }
-  .site-nav .links a { width: 100%; padding: 8px 0; }
-  .project-modal .modal-panel { width: 100%; max-height: 100vh; margin: 0; border-radius: 0; }
+  .site-nav .links a { width: 100%; padding: 10px 0; font-size: 16px; }
+
+  /* hero */
+  .hero { padding-top: 40px; padding-bottom: 32px; }
+  .hero-grid { gap: 20px; }
+  .hero .eyebrow { font-size: 15px; margin-bottom: 8px; }
+  .hero h1 { font-size: 32px; }
+  .hero-heading { gap: 10px; margin-bottom: 14px; }
+  .hero-heading .role-badge { padding: 6px 11px; font-size: 12.5px; border-radius: 7px; }
+  .hero p.tagline { font-size: 15px; line-height: 1.65; }
+  .hero-facts { margin-top: 14px; gap: 6px; }
+  .hero-facts li { font-size: 14.5px; line-height: 1.6; padding-left: 16px; }
+  .hero-facts li::before { top: 7px; width: 5px; height: 5px; }
+  .hero .cta { gap: 8px; margin-top: 20px; }
+  .btn { font-size: 15px; padding: 11px 16px; }
+
+  /* section */
+  .section { padding-top: 36px; padding-bottom: 36px; }
+  .section-label { font-size: 12.5px; }
+  .section h2 { font-size: 24px; margin-bottom: 14px; }
+  .about-text { font-size: 16px; margin-bottom: 18px; }
+  .role-badge { padding: 10px 14px; font-size: 15px; }
+
+  /* skills */
+  .skills-hint { font-size: 12px; margin-bottom: 16px; }
+  .skills-coin-canvas { height: 300px; }
+  .skill-chip { font-size: 14.5px; padding: 6px 11px 6px 8px; }
+  .skill-chip .skill-icon i { font-size: 18px; }
+
+  /* timeline */
+  .tv-period { font-size: 13px; }
+  .tv-title { font-size: 16.5px; }
+  .tv-detail ul { font-size: 14px; }
+  .th-hint { font-size: 12.5px; }
+
+  /* projects */
+  .project-group { margin-bottom: 28px; }
+  .project-group h3 { font-size: 17px; }
+  .project-card .thumb { height: 150px; font-size: 14px; }
+  .project-card h4 { font-size: 17px; }
+  .project-card .period { font-size: 13px; }
   .highlight-badge { width: 76px; height: 76px; top: -28px; left: -28px; }
+
+  /* blog list */
+  .blog-filter { margin: 16px 0 20px; }
+  .filter-tab { font-size: 13px; padding: 5px 12px; }
+  .post-item { flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 0; }
+  .post-item .title { font-size: 16.5px; }
+  .post-item .date { font-size: 13px; }
+
+  /* contact */
+  .contact-box { padding: 18px; }
+  .contact-box h3 { font-size: 18px; }
+  .contact-box p { font-size: 15px; }
+  .contact-form { padding: 20px; gap: 16px; border-radius: 12px; }
+  .form-field label { font-size: 14px; }
+  .contact-links { gap: 14px; margin-top: 16px; }
+  .contact-links a { font-size: 15px; }
+  .site-footer { padding: 24px 0 48px; font-size: 13.5px; }
+
+  /* post page */
+  .post-content { padding: 36px 18px; font-size: 16.5px; line-height: 1.75; }
+  .post-content h1 { font-size: 27px; }
+  .post-content .meta { font-size: 13px; margin-bottom: 24px; }
+  .post-content h2 { font-size: 20px; margin: 28px 0 10px; }
+  .post-content h3 { font-size: 17px; margin: 24px 0 8px; }
+  /* pre-wrap 은 정렬용 공백을 줄 끝에 흘려보내 화면 밖으로 내보낸다. break-spaces 로 공백도 같이 꺾는다 */
+  .post-content pre { padding: 12px; margin-bottom: 20px; white-space: break-spaces; overflow-x: auto; }
+  .post-content code, .post-content pre code { font-size: 12.5px; }
+  .post-content table { font-size: 13px; }
+  .post-content th, .post-content td { padding: 6px 8px; }
+  .post-content td code, .post-content th code { font-size: 11.5px; }
+  .post-content figcaption { font-size: 12.5px; }
+
+  /* 프로젝트 상세 + 모달 — 데스크톱에서 10~12px로 잡혀 있어 폰에서는 읽히지 않는다 */
+  .project-detail { padding: 32px 18px; }
+  .project-modal .modal-body.project-detail { padding: 4px 18px 40px; }
+  .project-detail h1,
+  .project-modal .modal-body h1 { font-size: 28px; }
+  .project-detail h1:not(:first-of-type),
+  .project-modal .modal-body h1:not(:first-of-type) { font-size: 22px; margin-top: 32px; }
+  .project-detail h2,
+  .project-modal .modal-body h2 { font-size: 19px; margin: 32px 0 12px; }
+  .project-detail h3,
+  .project-modal .modal-body h3 { font-size: 16.5px; margin: 24px 0 10px; }
+  .project-detail p,
+  .project-detail ul, .project-detail ol,
+  .project-modal .modal-body p,
+  .project-modal .modal-body ul, .project-modal .modal-body ol { font-size: 15.5px; line-height: 1.7; }
+  .project-detail .meta,
+  .project-modal .modal-body .meta { font-size: 13px; }
+  .project-detail .role-line,
+  .project-modal .modal-body .role-line { font-size: 14px; }
+  .project-detail .role-line .role-label,
+  .project-modal .modal-body .role-line .role-label { font-size: 12px; }
+  .project-detail .result-badge,
+  .project-modal .modal-body .result-badge { font-size: 14px; padding: 7px 14px; }
+  .project-detail .quick-facts { padding: 16px 18px; margin-bottom: 28px; }
+  .project-detail .qf-label,
+  .project-modal .modal-body .qf-label { font-size: 12px; }
+  .project-detail .qf-links a, .project-detail .qf-link-pending,
+  .project-modal .modal-body .qf-links a,
+  .project-modal .modal-body .qf-link-pending { font-size: 14px; }
+  .project-detail .quick-facts .skill-chip,
+  .project-modal .modal-body .quick-facts .skill-chip { font-size: 13px; }
+  .project-detail .failure-card h2 { font-size: 15.5px; margin: 0 32px 10px 0; }
+  .project-detail .failure-card dt { font-size: 12px; }
+  .project-detail .failure-card dd { font-size: 14px; }
+  .project-detail .indent-1 { margin-left: 0; }
+  .project-detail .indent-2 { margin-left: 10px; }
+  .project-detail .indent-3 { margin-left: 18px; }
+  .link-card { padding: 14px; gap: 12px; }
+  .link-card-logo { width: 44px; height: 44px; }
+  .link-card-name,
+  .project-modal .modal-body .link-card-name { font-size: 14.5px; }
+  .link-card-desc,
+  .project-modal .modal-body .link-card-desc { font-size: 13px; }
+  .link-card-url, .link-card .link-card-date,
+  .project-modal .modal-body .link-card-url,
+  .project-modal .modal-body .link-card-date { font-size: 12px; }
+  .project-toc { padding: 14px 16px; }
+  .project-toc .toc-label,
+  .project-modal .modal-body .toc-label { font-size: 12px; }
+  .project-toc a,
+  .project-modal .modal-body .project-toc a { font-size: 14px; }
+
+  /* modal */
+  .project-modal .modal-panel { width: 100%; max-width: none; max-height: 100vh; margin: 0; border-radius: 0; }
 }

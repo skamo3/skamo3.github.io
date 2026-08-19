@@ -13,6 +13,67 @@ const COIN_SCALE = 1.045; // 동전 크기: 1.1에서 5% 축소
 const REFLECTION_GAP = 0.3; // 코인과 바닥 반사 사이 간격
 const Y_BASE = 0.45;
 const FLOOR_Y = -0.62; // 반사를 코인에 조금 더 붙여 리본이 들어갈 여백을 남김
+const SPACING_NARROW = 2.7; // 한 줄이 안 들어가는 좁은 화면에서 쓰는 간격
+const ROW_GAP = 3.4; // 여러 줄로 접었을 때 줄 간격 (아랫줄이 윗줄 반사에 겹치지 않는 최소값)
+const REFLECTION_SPAN = 1.3; // 코인 아래로 보이는 반사 높이
+const FOV = 44;
+const CAM_Y = -0.25; // 리본을 올린 만큼 코인+반사가 프레임 중앙에 오도록 재조정
+const CAM_Z = 7;
+const RIBBON_OFFSET = -1.5; // 코인 중심 기준 리본 위치
+const HALF_TAN = Math.tan((FOV * Math.PI) / 360);
+
+// 코인을 한 줄로 늘어놓으면 좁은 화면에서는 양옆이 프레임 밖으로 나가 보이지 않는다.
+// 캔버스 비율을 보고 격자로 접은 뒤, 전체가 들어올 만큼 카메라를 뒤로 뺀다.
+function computeLayout(n, aspect) {
+  const oneRowHalf = ((n - 1) * SPACING) / 2 + COIN_SCALE;
+  if (oneRowHalf <= HALF_TAN * CAM_Z * aspect) {
+    return {
+      xs: Array.from({ length: n }, (_, i) => (i - (n - 1) / 2) * SPACING),
+      ys: Array(n).fill(Y_BASE),
+      camY: CAM_Y,
+      camZ: CAM_Z,
+    };
+  }
+
+  let best = null;
+  for (let cols = 1; cols <= n; cols++) {
+    const rows = Math.ceil(n / cols);
+    const w = (cols - 1) * SPACING_NARROW + COIN_SCALE * 2;
+    const h = (rows - 1) * ROW_GAP + COIN_SCALE * 2 + REFLECTION_SPAN;
+    // 가로/세로 중 더 빡빡한 쪽이 카메라 거리를 결정한다. 거리가 짧을수록 코인이 크게 보인다
+    const z = Math.max(w / 2 / (HALF_TAN * aspect), h / 2 / HALF_TAN);
+    if (!best || z < best.z) best = { cols, rows, z };
+  }
+
+  const { cols, rows, z } = best;
+  const xs = [], ys = [];
+  for (let i = 0; i < n; i++) {
+    const row = Math.floor(i / cols);
+    const inRow = Math.min(cols, n - row * cols); // 마지막 줄이 덜 찼으면 그 줄만 따로 가운데 정렬
+    xs.push((i - row * cols - (inRow - 1) / 2) * SPACING_NARROW);
+    ys.push(Y_BASE + ((rows - 1) / 2 - row) * ROW_GAP);
+  }
+  const top = Y_BASE + ((rows - 1) / 2) * ROW_GAP + COIN_SCALE;
+  const bottom = Y_BASE - ((rows - 1) / 2) * ROW_GAP - COIN_SCALE - REFLECTION_SPAN;
+  return { xs, ys, camY: (top + bottom) / 2, camZ: z * 1.06 };
+}
+
+function applyLayout(coins, camera, canvas) {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (!w || !h) return;
+  const layout = computeLayout(coins.length, w / h);
+  camera.position.set(0, layout.camY, layout.camZ);
+  camera.updateProjectionMatrix();
+  for (let i = 0; i < coins.length; i++) {
+    const c = coins[i];
+    c.baseX = layout.xs[i];
+    c.baseY = layout.ys[i];
+    c.floorY = c.baseY + (FLOOR_Y - Y_BASE);
+    c.group.position.set(c.baseX, c.baseY, 0);
+    c.ribbon.position.set(c.baseX, c.baseY + RIBBON_OFFSET, 0);
+    c.sparks.points.position.set(c.baseX, c.baseY, 0);
+  }
+}
 
 async function logoImage(slug, color) {
   let svg;
@@ -163,8 +224,8 @@ function makeScene(canvasId) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(44, 1, 0.1, 50);
-  camera.position.set(0, -0.25, 7); // 리본을 올린 만큼 코인+반사가 프레임 중앙에 오도록 재조정
+  const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 50);
+  camera.position.set(0, CAM_Y, CAM_Z);
   const resize = () => {
     const w = canvas.clientWidth, h = canvas.clientHeight;
     renderer.setSize(w, h, false);
@@ -201,7 +262,6 @@ async function buildCoinShelf(canvasId, items) {
   scene.add(new THREE.AmbientLight(0x9a8f7a, 0.5));
 
   const n = items.length;
-  const xs = items.map((_, i) => (i - (n - 1) / 2) * SPACING);
 
   const geo = new THREE.CylinderGeometry(1, 1, 0.17, 64);
   geo.rotateY(Math.PI / 2); // 캡 UV가 로컬 z축 기준이라 로고가 90° 누워 보이는 것 보정
@@ -250,7 +310,7 @@ async function buildCoinShelf(canvasId, items) {
     back.position.z = -0.088;
     back.rotation.y = Math.PI;
     group.add(front, back);
-    group.position.set(xs[i], Y_BASE, 0);
+    group.position.set(0, Y_BASE, 0);
     group.scale.setScalar(COIN_SCALE);
     scene.add(group);
 
@@ -271,7 +331,7 @@ async function buildCoinShelf(canvasId, items) {
     // 이름 리본 (hover 시 표시)
     const ribbon = new THREE.Sprite(new THREE.SpriteMaterial({ map: ribbonTexture(item.name, tier.rimHi), transparent: true, opacity: 0, depthWrite: false, depthTest: false }));
     ribbon.scale.set(2.73, 0.6825, 1); // 리본 크기 +30%
-    ribbon.position.set(xs[i], -1.05, 0);
+    ribbon.position.set(0, Y_BASE + RIBBON_OFFSET, 0);
     ribbon.renderOrder = 10;
     ribbon.raycast = () => {};
     scene.add(ribbon);
@@ -287,17 +347,22 @@ async function buildCoinShelf(canvasId, items) {
     sparkGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 3), 3));
     const sparkMat = new THREE.PointsMaterial({ map: starTexture(), size: 0.16, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
     const sparks = new THREE.Points(sparkGeo, sparkMat);
-    sparks.position.set(xs[i], Y_BASE, 0);
+    sparks.position.set(0, Y_BASE, 0);
     sparks.raycast = () => {};
     scene.add(sparks);
 
     coins.push({
       group, mirror, ribbon, glintMat,
-      sparks: { geo: sparkGeo, mat: sparkMat, base, N },
+      sparks: { geo: sparkGeo, mat: sparkMat, base, N, points: sparks },
+      baseX: 0, baseY: Y_BASE, floorY: FLOOR_Y,
       wind: new THREE.Vector2(), windVel: new THREE.Vector2(), hovered: false,
       flip: { active: false, start: -10 },
     });
   }
+
+  const relayout = () => applyLayout(coins, camera, canvas);
+  relayout();
+  addEventListener('resize', relayout);
 
   // 인터랙션: hover 리본 / 클릭 플립 / 드래그 고무줄 회전
   const ray = new THREE.Raycaster();
@@ -371,7 +436,7 @@ async function buildCoinShelf(canvasId, items) {
           c.windVel.set(0, 0);
         }
       }
-      let y = Y_BASE + Math.sin(t * 1.4 + phase) * 0.08;
+      let y = c.baseY + Math.sin(t * 1.4 + phase) * 0.08;
       let rotX = 0;
       let rotY = t * 0.9 + phase;
       if (c.flip.active) {
@@ -389,7 +454,7 @@ async function buildCoinShelf(canvasId, items) {
       qWind.premultiply(qTmp);
       c.group.quaternion.multiplyQuaternions(qWind, qAuto);
       const gq = c.group.quaternion;
-      c.mirror.position.set(xs[i], 2 * FLOOR_Y - y - REFLECTION_GAP, 0);
+      c.mirror.position.set(c.baseX, 2 * c.floorY - y - REFLECTION_GAP, 0);
       c.mirror.quaternion.set(-gq.x, gq.y, -gq.z, gq.w);
       c.ribbon.material.opacity += ((c.hovered ? 0.95 : 0) - c.ribbon.material.opacity) * Math.min(dt * 8, 1);
       c.glintMat.uniforms.uTime.value = t + i * 1.15;
