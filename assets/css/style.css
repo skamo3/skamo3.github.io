@@ -821,7 +821,9 @@ a { color: inherit; text-decoration: none; }
 .link-card-desc { font-size: 11.1px; color: var(--text-muted); margin: 0 0 8px; }
 .link-card-url { font-size: 9.99px; color: var(--text-muted); margin: 0; overflow-wrap: anywhere; }
 .link-card .link-card-date { font-size: 9.99px; font-weight: 700; color: var(--accent); margin: 0; letter-spacing: 0.02em; }
-.link-card-logo { width: 64px; height: 64px; object-fit: contain; flex-shrink: 0; border-radius: 8px; background: #fff; padding: 4px; }
+/* 대부분 og:image(GitHub 2:1, Steam 616x353 등)라 가로 박스로 받는다.
+   로고를 직접 지정한 카드도 있어 contain + 흰 배경은 유지 */
+.link-card-logo { width: 120px; height: 68px; object-fit: contain; flex-shrink: 0; border-radius: 8px; background: #fff; padding: 3px; }
 
 .project-toc {
   background: var(--card);
@@ -1060,7 +1062,7 @@ body.modal-open { overflow: hidden; }
   /* 링크 배너는 본문 흐름 중간의 보조 요소라 본문보다 한 단계 작게 둔다.
      카드 안쪽도 <p>라 .project-detail p / .modal-body p 에 밀린다 — .link-card 를 붙여 우선순위를 올린다 */
   .link-card { padding: 11px 12px; gap: 10px; border-radius: 8px; }
-  .link-card-logo { width: 34px; height: 34px; }
+  .link-card-logo { width: 80px; height: 45px; border-radius: 6px; padding: 2px; }
   .link-card .link-card-name,
   .project-modal .link-card .link-card-name { font-size: 13px; line-height: 1.4; margin-bottom: 3px; }
   .link-card .link-card-desc,
