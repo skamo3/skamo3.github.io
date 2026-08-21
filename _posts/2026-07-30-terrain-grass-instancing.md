@@ -6,7 +6,15 @@ category: graphics
 
 [지난 글](/blog/2026/07/27/rendering-pipeline-basics/)에서는 렌더링 파이프라인의 기초를 정리했다. 이번에 만들어 볼 것은 heightmap을 이용해 평면을 지형으로 만드는 것과, 그 위에 풀을 배치하고 바람에 흔들리게 하는 것이다. 하나의 풀숲을 만들어보겠다.
 
-> 직접 만져볼 수 있는 데모: [/rendering-lab/#ch1](/rendering-lab/#ch1)
+<a class="demo-card" href="/rendering-lab/#ch1">
+  <img class="demo-thumb" src="/assets/images/blog/terrain-grass-instancing/grass-fixed.png" alt="지형 + 풀숲 데모 미리보기">
+  <span class="demo-body">
+    <span class="demo-label">인터랙티브 데모</span>
+    <span class="demo-title">지형 + 풀숲</span>
+    <span class="demo-desc">heightmap의 높이·굴곡을 슬라이더로 바꿔가며 지형이 만들어지는 과정을 직접 볼 수 있다.</span>
+    <span class="demo-go">데모 열기 →</span>
+  </span>
+</a>
 
 ## Noise 기반 HeightMap을 이용한 지형 만들기
 

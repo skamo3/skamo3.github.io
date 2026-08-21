@@ -202,7 +202,7 @@ export default {
     const params = {
       elevation: 45, azimuth: 35, ambient: 0.15, lightAutoRotate: false,
       shadingModel: 'pbr',
-      shininess: 32, metallic: 0.0, roughness: 0.4,
+      shininess: 32, metallic: 0.6, roughness: 0.4,
       helmetScale: 1.2, helmetY: 0, helmetRotY: 0,
       knightScale: 1.0, knightY: 0, knightRotY: 0,
     };

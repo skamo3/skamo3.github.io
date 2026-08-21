@@ -530,6 +530,72 @@ a { color: inherit; text-decoration: none; }
   color: var(--text-muted);
   border-radius: 0 8px 8px 0;
 }
+
+/* 인터랙티브 데모로 넘어가는 큰 카드 링크 (rendering-lab 글에서 사용) */
+.post-content .demo-card {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin: 0 0 28px;
+  background: var(--card);
+  border: 0.5px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+.post-content .demo-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+.post-content .demo-card .demo-thumb {
+  flex: 0 0 42%;
+  max-width: 260px;
+  align-self: stretch;
+  object-fit: cover;
+  margin: 0;
+  border-radius: 0;
+  border: 0;
+  display: block;
+}
+.post-content .demo-card .demo-body {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+}
+.post-content .demo-card .demo-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+.post-content .demo-card .demo-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+}
+.post-content .demo-card .demo-desc {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.post-content .demo-card .demo-go {
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+}
+@media (max-width: 560px) {
+  .post-content .demo-card { flex-direction: column; }
+  .post-content .demo-card .demo-thumb { flex: none; max-width: 100%; width: 100%; height: 160px; }
+}
 .post-content pre {
   background: var(--card);
   border: 1px solid var(--border);

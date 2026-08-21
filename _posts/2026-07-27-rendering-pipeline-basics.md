@@ -7,7 +7,15 @@ category: graphics
 렌더링을 이론으로만 알던 개념들을 직접 코드로 짚어보기 위해, three.js에서 커스텀 셰이더로 큐브 하나를 그려봤다.
 three.js의 기본 재질을 쓰면 대부분을 엔진이 대신 처리해 흐름이 가려지는데, 셰이더를 직접 쓰면 정점이 화면 픽셀이 되기까지의 과정이 그대로 드러난다.
 
-> 직접 만져볼 수 있는 데모: [/rendering-lab/#ch0](/rendering-lab/#ch0)
+<a class="demo-card" href="/rendering-lab/#ch0">
+  <img class="demo-thumb" src="/assets/images/blog/rendering-pipeline-basics/cube-correct.png" alt="렌더링 파이프라인 데모 미리보기">
+  <span class="demo-body">
+    <span class="demo-label">인터랙티브 데모</span>
+    <span class="demo-title">삼각형 → 큐브</span>
+    <span class="demo-desc">MVP 변환을 단계별로 껐다 켜보면서, 정점이 화면 픽셀이 되기까지의 과정을 직접 확인할 수 있다.</span>
+    <span class="demo-go">데모 열기 →</span>
+  </span>
+</a>
 
 ![MVP 변환을 정상적으로 거쳐 그려진 큐브. 면마다 법선 방향에 따라 다른 색을 낸다](/assets/images/blog/rendering-pipeline-basics/cube-correct.png)
 

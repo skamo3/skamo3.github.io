@@ -6,7 +6,15 @@ category: graphics
 
 조명 계산에서 법선 벡터가 왜 중요한지 정리한다.
 
-> 데모: [/rendering-lab/#ch2](/rendering-lab/#ch2) ("재계산된 법선 사용" 토글로 비교할 수 있다)
+<a class="demo-card" href="/rendering-lab/#ch2">
+  <img class="demo-thumb" src="/assets/images/blog/normal-vector-lighting/normal-correct.png" alt="법선 보정 데모 미리보기">
+  <span class="demo-body">
+    <span class="demo-label">인터랙티브 데모</span>
+    <span class="demo-title">기본 조명 + 법선 보정</span>
+    <span class="demo-desc">"재계산된 법선 사용" 토글로, 법선을 고치기 전과 후의 음영 차이를 바로 비교할 수 있다.</span>
+    <span class="demo-go">데모 열기 →</span>
+  </span>
+</a>
 
 ## 법선이 왜 필요한가
 

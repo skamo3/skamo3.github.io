@@ -6,7 +6,15 @@ category: graphics
 
 Lambert, Phong, PBR 세 쉐이딩 모델이 뭘 다르게 계산하는지, 왜 그 순서로 나왔는지 정리한다.
 
-> 데모: [/rendering-lab/#ch2-pbr](/rendering-lab/#ch2-pbr) (쉐이딩 모델 드롭다운으로 셋을 바로 비교할 수 있다)
+<a class="demo-card" href="/rendering-lab/#ch2-pbr">
+  <img class="demo-thumb" src="/assets/images/blog/lambert-phong-pbr-shading-models/pbr-edge.png" alt="쉐이딩 모델 비교 데모 미리보기">
+  <span class="demo-body">
+    <span class="demo-label">인터랙티브 데모</span>
+    <span class="demo-title">쉐이딩 모델 비교 — Lambert · Phong · PBR</span>
+    <span class="demo-desc">드롭다운으로 세 모델을 바로 바꿔가며 비교하고, metallic·roughness를 직접 조절해볼 수 있다.</span>
+    <span class="demo-go">데모 열기 →</span>
+  </span>
+</a>
 
 ## 라이팅 모델의 역할
 

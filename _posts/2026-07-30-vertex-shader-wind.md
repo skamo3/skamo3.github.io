@@ -6,7 +6,15 @@ category: graphics
 
 [지난 글](/blog/2026/07/30/terrain-grass-instancing/)에서 heightmap 지형 위에 Mesh 인스턴싱으로 풀을 심었다. 생성한 풀에 Vertex Shader Animation을 이용해 바람에 흔들리는 효과를 구현한다.
 
-> 데모: [/rendering-lab/#ch1](/rendering-lab/#ch1) (바람 토글로 켜고 끌 수 있다)
+<a class="demo-card" href="/rendering-lab/#ch1">
+  <img class="demo-thumb" src="/assets/images/blog/vertex-shader-wind/grass-phase-minus.gif" alt="바람에 흔들리는 풀 데모 미리보기">
+  <span class="demo-body">
+    <span class="demo-label">인터랙티브 데모</span>
+    <span class="demo-title">바람에 흔들리는 풀</span>
+    <span class="demo-desc">바람 토글로 켜고 끄면서, 정점 셰이더가 풀을 어떻게 휘게 만드는지 비교해볼 수 있다.</span>
+    <span class="demo-go">데모 열기 →</span>
+  </span>
+</a>
 
 ![바람에 흔들리는 풀](/assets/images/blog/vertex-shader-wind/grass-wind.gif)
 
