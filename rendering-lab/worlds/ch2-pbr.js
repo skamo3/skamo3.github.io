@@ -186,6 +186,10 @@ export default {
 
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // 그림자 맵은 기본적으로 renderer.render()마다 다시 그려진다. 이 씬은 물체가 고정이라
+    // 광원이 움직일 때만 다시 그리면 충분하다 (환경맵 큐브 6면까지 합치면 프레임당 7번 그려진다).
+    renderer.shadowMap.autoUpdate = false;
+    renderer.shadowMap.needsUpdate = true;
 
     const aspect = (canvas.clientWidth / canvas.clientHeight) || 1;
     const camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
@@ -246,6 +250,8 @@ export default {
     const hemiLight = new THREE.HemisphereLight(0x2a3550, 0x0a0d16, 0.6);
     scene.add(hemiLight);
 
+    // 광원이 움직이면 그림자와 환경 반사가 둘 다 낡은 값이 되므로 같이 표시해둔다.
+    let envDirty = true;
     function updateLightDir() {
       const el = params.elevation * Math.PI / 180;
       const az = params.azimuth * Math.PI / 180;
@@ -256,6 +262,8 @@ export default {
       ).normalize();
       sunLight.position.copy(uLightDir.value).multiplyScalar(15);
       sunLight.target.position.set(0, 0.5, 0);
+      renderer.shadowMap.needsUpdate = true;
+      envDirty = true;
     }
     updateLightDir();
 
@@ -366,6 +374,7 @@ export default {
       }
       toggleFolder(phongF, model === 'phong');
       toggleFolder(pbrF, model === 'pbr');
+      envDirty = true;   // 재질이 바뀌면 주변이 다르게 찍히므로 환경맵도 다시 찍는다
     }
     // 모델 선택 드롭다운을 폴더 맨 위에 둔다 — 무엇을 비교하는 화면인지 먼저 보이도록
     materialF.add(params, 'shadingModel', { PBR: 'pbr', Phong: 'phong', Lambert: 'lambert' })
@@ -412,18 +421,15 @@ export default {
     let colorT = 0;
     const colorCycleDuration = 4; // 한 색에서 다음 색까지 걸리는 시간(초)
 
+    let envTick = 0;
+    const ENV_ROTATE_INTERVAL = 4;   // 광원 자동 회전 중 환경맵을 몇 프레임에 한 번 갱신할지
+
     return {
       scene,
       camera,
       update(dt = 0) {
         controls.update();
         uCameraPos.value.copy(camera.position);
-
-        // 구슬 자리에서 주변을 다시 찍어 uEnvMap을 갱신한다. 구슬 스스로를 비추면 안 되니 잠깐 숨긴다.
-        sphere.visible = false;
-        envCamera.position.copy(sphere.position);
-        envCamera.update(renderer, scene);
-        sphere.visible = true;
 
         if (params.lightAutoRotate) {
           params.azimuth = (params.azimuth + dt * 15) % 360; // 초당 15도, 24초에 한 바퀴
@@ -437,6 +443,19 @@ export default {
           colorTo.setHSL(Math.random(), 0.5 + Math.random() * 0.4, 0.4 + Math.random() * 0.3);
         }
         uBaseColor.value.copy(colorFrom).lerp(colorTo, colorT);
+
+        // 환경 반사는 구슬 자리에서 6방향을 찍는 거라 카메라를 돌려도 결과가 안 바뀐다.
+        // 그래서 매 프레임이 아니라 실제로 장면이 달라졌을 때만(광원·재질 변경) 다시 찍는다.
+        // 광원 자동 회전 중에는 계속 낡으므로, 몇 프레임에 한 번씩만 따라잡는다.
+        if (params.shadingModel === 'pbr' && envDirty) {
+          if (!params.lightAutoRotate || (envTick++ % ENV_ROTATE_INTERVAL === 0)) {
+            sphere.visible = false;   // 구슬이 자기 자신을 비추면 안 되니 잠깐 숨긴다
+            envCamera.position.copy(sphere.position);
+            envCamera.update(renderer, scene);
+            sphere.visible = true;
+            envDirty = params.lightAutoRotate;   // 회전 중이면 다음 프레임에도 다시 찍어야 한다
+          }
+        }
       },
       dispose() {
         floorGeo.dispose();
@@ -451,6 +470,7 @@ export default {
         if (helmet) disposeObject3D(helmet);
         if (knight) disposeObject3D(knight);
         renderer.shadowMap.enabled = false;
+        renderer.shadowMap.autoUpdate = true;   // 렌더러는 월드끼리 공유하므로 기본값으로 돌려놓는다
         controls.dispose();
         gui.destroy();
       },
