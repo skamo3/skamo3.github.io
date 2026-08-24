@@ -606,7 +606,7 @@ a { color: inherit; text-decoration: none; }
   word-break: break-word;
   overflow-wrap: break-word;
 }
-.post-content code { font-family: var(--font-mono, monospace); font-size: 14px; }
+.post-content code { font-family: var(--font-mono, monospace); font-size: 14px; font-variant-ligatures: none; font-feature-settings: "liga" 0, "calt" 0; }
 .post-content pre code { font-size: 14px; }
 .post-content code.highlighter-rouge {
   color: var(--inline-code-fg);
@@ -767,6 +767,8 @@ a { color: inherit; text-decoration: none; }
   background: var(--accent2-dark);
   padding: 2px 6px;
   border-radius: 5px;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
 }
 .project-detail pre {
   background: var(--card);
