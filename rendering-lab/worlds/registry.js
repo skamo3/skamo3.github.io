@@ -52,4 +52,16 @@ export const registry = [
   { id: 'ch3', chapter: 'Ch3 · 렌더링 아키텍처',  title: 'Deferred · G-buffer',   status: 'soon' },
   { id: 'ch4', chapter: 'Ch4 · 환경과 반사',      title: '물 · 반사 · 파티클',     status: 'soon' },
   { id: 'ch5', chapter: 'Ch5 · 후처리',          title: 'Tonemap · Bloom · AA',  status: 'soon' },
+
+  // 커리큘럼 밖 독립 실험 (HFW 부서지는 파도, WebGPU 컴퓨트). 설계: chapters/ocean-wave.design.md
+  {
+    id: 'ocean-wave',
+    chapter: 'Ocean Wave',
+    title: '해안가 부서지는 파도',
+    status: 'ready',
+    renderer: 'webgpu',
+    file: 'worlds/ocean-wave.js',
+    lesson: 'chapters/ocean-wave.design.md',
+    load: () => import('./ocean-wave.js'),
+  },
 ];

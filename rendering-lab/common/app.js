@@ -81,7 +81,7 @@ async function route() {
 
   try {
     const mod = await world.load();
-    await harness.mount(mod.default);
+    await harness.mount(mod.default, { renderer: world.renderer || 'webgl' });
   } catch (e) {
     errEl.style.display = 'block';
     errEl.textContent = '월드 로드 실패: ' + (e && e.message ? e.message : e);
