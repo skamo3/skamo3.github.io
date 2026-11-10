@@ -154,6 +154,23 @@ export function createPlayer(x0, z0) {
     fig.root.rotation.y = facing;
   };
 
+  // 물 시뮬 입력 (P6): 몸을 원기둥 3개로 근사한다. 두 다리(흔들리는 다리 가운데) + 몸통
+  //   반환 { x, z, r, sub }: sub = 그 원기둥이 수면 h 아래에 잠긴 높이
+  const tmp = new THREE.Vector3();
+  const srcs = [{ x: 0, z: 0, r: 0.1, sub: 0 }, { x: 0, z: 0, r: 0.1, sub: 0 }, { x: 0, z: 0, r: 0.24, sub: 0 }];
+  st.sources = (h) => {
+    fig.root.updateMatrixWorld(true);
+    for (let k = 0; k < 2; k++) {
+      fig.legs[k].children[0].getWorldPosition(tmp);
+      srcs[k].x = tmp.x; srcs[k].z = tmp.z;
+      srcs[k].sub = Math.min(Math.max(h - pos.y, 0), 0.84);
+    }
+    fig.body.children[0].getWorldPosition(tmp);       // 몸통
+    srcs[2].x = tmp.x; srcs[2].z = tmp.z;
+    srcs[2].sub = Math.min(Math.max(h - (pos.y + 0.75), 0), 0.75);
+    return srcs;
+  };
+
   st.object = fig.root;
   st.dispose = () => fig.root.traverse(o => {
     if (o.geometry) o.geometry.dispose();

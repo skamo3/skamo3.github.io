@@ -16,6 +16,8 @@
 //     거품은 프레임 사이에 남는다: compute C가 이전 거품을 조금씩 줄여 가며 새 거품과 max를 취한다
 // P5: 3인칭 캐릭터(ocean-wave-player.js). 지형은 해석적 함수로, 수면은 GPU 탐침(3 × 3 정점)을 비동기로 읽어 판정한다.
 //     V = 캐릭터 ↔ 관찰 카메라 전환
+// P6: 플레이어 주변 로컬 시뮬(ocean-wave-sim.js). 수면 정점 버퍼는 베이크만 담고, 시뮬은 렌더(정점 높이 + 프래그먼트 노멀)와
+//     탐침에서 같은 합성 함수로 더한다. N = 시뮬 합성 켜기/끄기
 //
 // 주의: 이 월드는 three/webgpu 빌드만 쓴다. 'three'(WebGL 빌드)와 섞지 않는다.
 import * as THREE from 'three/webgpu';
@@ -30,6 +32,7 @@ import {
 } from './ocean-wave-coast.js';
 import { SUN, HORIZON_HEX, skyColor, rippleNormal, shadeWater } from './ocean-wave-shading.js';
 import { createPlayer, createThirdPerson } from './ocean-wave-player.js';
+import { createSim, SIM } from './ocean-wave-sim.js';
 
 // ── 월드 좌표 규칙 ──
 // 단위 m, 수면 y = 0. 해안선은 x축을 따라 놓이고 바다는 -z 쪽, 육지는 +z 쪽.
@@ -309,12 +312,28 @@ function buildWater(section) {
     foamBuf.element(i).assign(max(foam, foamBuf.element(i).mul(foamDecay)));
   })().compute(COUNT);
 
+  // ── 로컬 시뮬 (P6~) + 합성 ──
+  // 최종 높이 = 베이크 + 창 가중치 × 보호 × δ. 보호: 말린 부분(높이 솟음, 옆으로 크게 밀린 정점)에는 시뮬을 얹지 않는다.
+  // 수직 오프셋을 overhang 위에 그대로 더하면 lip이 찢어진다
+  const sim = createSim({ posBuf, mesh: { GX, GZ: L.GZ, NC, x0: WATER.x0, x1: WATER.x1, dx: WATER.dx, zFine: WATER.zFine, z1: WATER.z1, dzFine: WATER.dzFine } });
+  const simOn = uniform(1);
+  const composite = (base, grid) => {
+    const prot = float(1).sub(smoothstep(1.2, 2.0, base.y)).mul(float(1).sub(smoothstep(0.15, 0.5, length(base.xz.sub(grid)))));
+    const w = sim.weight(base.xz).mul(prot).mul(simOn);
+    return { y: base.y.add(sim.sample(base.xz).x.mul(w)), w };
+  };
+
   // 조명은 shadeWater가 직접 계산하므로 라이트를 쓰지 않는 Basic 재질에 색만 꽂는다
   const mat = new THREE.MeshBasicNodeMaterial({ transparent: true, side: THREE.DoubleSide });
-  mat.positionNode = posBuf.element(vertexIndex);   // 렌더 패스가 컴퓨트 결과를 그대로 읽음
-  const nW = normalize(varying(nrmBuf.element(vertexIndex)));
+  const base = posBuf.element(vertexIndex);         // 렌더 패스가 컴퓨트 결과를 그대로 읽음
+  const cmp = composite(base, attribute('position', 'vec3').xz);
+  mat.positionNode = vec3(base.x, cmp.y, base.z);
+  // 시뮬 물결은 정점 간격(0.5 m)보다 작을 수 있어서 노멀은 프래그먼트에서 시뮬 기울기로 직접 기울인다
+  const vW = varying(cmp.w);
+  const gS = sim.sample(positionWorld.xz).yz.mul(vW);
+  const nW = normalize(normalize(varying(nrmBuf.element(vertexIndex))).sub(vec3(gS.x, 0, gS.y)));
   const vFoam = varying(foamBuf.element(vertexIndex));
-  const vHeight = varying(posBuf.element(vertexIndex).y);
+  const vHeight = varying(cmp.y);
   const bed = attribute('aBed', 'float');
 
   const nFace = select(frontFacing, nW, nW.negate());            // 튜브 안쪽(뒷면)은 노멀 반전
@@ -354,13 +373,21 @@ function buildWater(section) {
   // 간격 1 m: x는 0.5 m × 2칸, z는 촘촘한 구간 0.125 m × 8칸
   const PX = 2, PZ = 8;
   const probeCenter = uniform(new THREE.Vector2(0, 0));    // 가운데 정점의 (ix, iz)
-  const probeBuf = instancedArray(9, 'float');
+  const probeBuf = instancedArray(10, 'float');   // 0~8: 합성 수면 3 × 3, 9: 가운데 베이크만
   const computeProbe = Fn(() => {
     const t = int(instanceIndex);
     const ox = t.mod(3).sub(1).mul(PX), oz = t.div(3).sub(1).mul(PZ);
-    const idx = int(probeCenter.y).add(oz).mul(GX).add(int(probeCenter.x).add(ox));
-    probeBuf.element(t).assign(posBuf.element(idx).y);
-  })().compute(9);
+    const pix = int(probeCenter.x).add(ox), piz = int(probeCenter.y).add(oz);
+    const idx = piz.mul(GX).add(pix);
+    const grid = vec2(float(pix).mul(WATER.dx).add(WATER.x0), float(piz.sub(NC)).mul(WATER.dzFine).add(WATER.zFine));
+    If(t.lessThan(9), () => {
+      probeBuf.element(t).assign(composite(posBuf.element(idx), grid).y);   // 캐릭터도 렌더와 같은 수면을 느낀다
+    }).Else(() => {
+      // 시뮬을 뺀 수면: 몸이 잠긴 부피는 이걸로 잰다. 시뮬이 들어간 수면으로 재면 "물이 솟음 → 더 잠김 → 더 솟음" 되먹임으로 터진다
+      const c0 = int(probeCenter.y).mul(GX).add(int(probeCenter.x));
+      probeBuf.element(t).assign(posBuf.element(c0).y);
+    });
+  })().compute(10);
   // (x, z)에 탐침을 놓는다. 촘촘한 구간 밖이면 false (그때는 잔잔한 수면 0을 쓴다)
   function probeAt(x, z) {
     const ix = Math.round((x - WATER.x0) / WATER.dx);
@@ -372,10 +399,10 @@ function buildWater(section) {
 
   return {
     mesh, computeQuads, computeSurface, waves, uploadWaves, focus, layout: L, posBuf, lutInfo, foamDecay,
-    computeProbe, probeBuf, probeAt,
+    computeProbe, probeBuf, probeAt, sim, simOn,
     S, K, KS,
     triCount: (L.GX - 1) * (L.GZ - 1) * 2,
-    dispose() { deformTex.dispose(); derivTex.dispose(); },
+    dispose() { deformTex.dispose(); derivTex.dispose(); sim.dispose(); },
   };
 }
 
@@ -490,7 +517,7 @@ export default {
     };
     setMode('char');
     // 캐릭터 발밑 수면 (GPU 탐침에서 비동기로 받아 옴): 높이 h, 기울기 (gx, gz)
-    const water0 = { h: 0, gx: 0, gz: 0 };
+    const water0 = { h: 0, gx: 0, gz: 0, bake: 0 };
     let wl = water0, probePending = false, probeOn = false, disposed = false;
 
     const backend = renderer.backend && renderer.backend.isWebGPUBackend ? 'WebGPU' : 'WebGL2 (WebGPU 미지원 폴백)';
@@ -511,6 +538,7 @@ export default {
       else if (e.key === '2') timeScale = 1;
       else if (e.key === '3') timeScale = 2;
       else if (e.code === 'KeyV') setMode(mode === 'char' ? 'orbit' : 'char');
+      else if (e.code === 'KeyN') water.simOn.value = water.simOn.value > 0.5 ? 0 : 1;
       else if (mode !== 'orbit') return;
       else if (e.code === 'KeyF') follow = !follow;
       else if (e.code === 'KeyC') { view = (view + 1) % VIEWS.length; orbit.setView(...VIEWS[view]); }
@@ -530,6 +558,8 @@ export default {
       el.textContent = JSON.stringify({ v: foc && foc.v, zCrest: foc && foc.z, stride, pts });
     };
     window.addEventListener('keydown', onDebugKey);
+    // ?debug: 콘솔·자동 검증용 핸들 (시뮬 버퍼 읽기 등)
+    if (debug) window.__ocean = { renderer, water, player, tps, get wl() { return wl; }, setMode };
 
     return {
       scene, camera,
@@ -550,6 +580,9 @@ export default {
         water.foamDecay.value = Math.exp(-simDt / 3.5);   // 거품 수명 약 3.5초
         renderer.compute(water.computeQuads);      // A: waveLUT → 쿼드
         renderer.compute(water.computeSurface);    // C: 쿼드 → 수면 정점
+        // S: 로컬 시뮬. 창 = 캐릭터 주변, 몸 소스 = 다리·몸통이 잠긴 부피 (직전 수면 기준)
+        water.sim.setFrame(player.pos.x, player.pos.z, player.sources(probeOn ? wl.bake : 0));
+        water.sim.run(renderer, simDt);
 
         // 캐릭터 발밑 수면 탐침: 한 번에 하나만 읽기 요청을 걸어 둔다 (GPU를 기다리지 않음)
         probeOn = water.probeAt(player.pos.x, player.pos.z);
@@ -561,7 +594,7 @@ export default {
             if (disposed) return;
             const a = new Float32Array(buf);
             // 3 × 3, 행 = z(-1, 0, +1), 열 = x(-1, 0, +1), 간격 1 m → 중앙 차분
-            wl = { h: a[4], gx: (a[5] - a[3]) / 2, gz: (a[7] - a[1]) / 2 };
+            wl = { h: a[4], gx: (a[5] - a[3]) / 2, gz: (a[7] - a[1]) / 2, bake: a[9] };
           }).catch(() => { probePending = false; });
         }
 
@@ -591,6 +624,7 @@ export default {
               + (player.push > 0.05 ? ` · 밀림 ${player.push.toFixed(1)} m/s` : '')
               + (player.blocked ? ` · 막힘(${{ deep: '깊음', slope: '경사', bounds: '경계' }[player.blocked]})` : ''),
             `          WASD 이동 · Shift 달리기 · 휠 거리`,
+            `시뮬      ${water.simOn.value > 0.5 ? water.sim.model : '끔'} · ${water.sim.N}² 셀 × ${water.sim.DX} m (창 ${water.sim.N * water.sim.DX} m) · 서브스텝 ${water.sim.steps} (dt ${(SIM.STEP * 1000).toFixed(1)} ms)   N 켜기/끄기`,
           ].join('\n');
         }
       },
@@ -602,6 +636,7 @@ export default {
         window.removeEventListener('keydown', onKey);
         window.removeEventListener('keydown', onDebugKey);
         document.getElementById('ocean-debug')?.remove();
+        if (window.__ocean) delete window.__ocean;
         hud.remove();
         water.dispose();
         scene.traverse(o => {
