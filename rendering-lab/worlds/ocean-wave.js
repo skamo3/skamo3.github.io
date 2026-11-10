@@ -26,7 +26,7 @@ import {
 } from 'three/tsl';
 import { bakeSection, SECTION_W, CREST_U } from './ocean-wave-section.js';
 import {
-  shoreZ, terrainHeight, smoothstepJS, bakeWaveLUT, sampleLUT, bakeVariation,
+  shoreZ, terrainHeight, smoothstepJS, bakeWaveLUT, sampleLUT, bakeVariation, FRONT,
 } from './ocean-wave-coast.js';
 import { SUN, HORIZON_HEX, skyColor, rippleNormal, shadeWater } from './ocean-wave-shading.js';
 import { createPlayer, createThirdPerson } from './ocean-wave-player.js';
@@ -218,7 +218,7 @@ function buildWater(section) {
     const cen = b0.add(b1).add(f0).add(f1).mul(0.25).toVar();
     const d2 = v => dot(v.sub(cen), v.sub(cen));
     const r2 = max(max(d2(b0), d2(b1)), max(d2(f0), d2(f1))).add(1);
-    const active = w.z.greaterThan(0.5).and(max(str0, str1).greaterThan(0.001)).and(min(s0.z, s1.z).lessThan(0.999));
+    const active = w.z.greaterThan(0.5).and(max(str0, str1).greaterThan(0.001)).and(min(s0.z, s1.z).lessThan(1.999));   // V = 2 → bore까지 다 사라짐
     const o = i.mul(4);
     quadBuf.element(o).assign(vec4(b0, b1));
     quadBuf.element(o.add(1)).assign(vec4(f0, f1));
@@ -229,6 +229,8 @@ function buildWater(section) {
   // ── compute C: 스레드 하나 = 수면 정점 하나 ──
   const cr = (a, b) => a.x.mul(b.y).sub(a.y.mul(b.x));
   const UP = vec3(0, 1, 0);
+  // bore 단면 모양 (u 단위): 앞 가장자리 UB, 뒤 오르막 길이 B_BACK, 앞 낙차 반폭 B_RISE
+  const BORE_H = FRONT.BORE_H, UB = CREST_U + 0.04, B_BACK = 0.35, B_RISE = 0.04;
   const foamDecay = uniform(1);          // 프레임마다 exp(-dt / 거품 수명)
   const computeSurface = Fn(() => {
     const i = instanceIndex;
@@ -268,20 +270,34 @@ function buildWater(section) {
         const ea = e.add(g.mul(u)).toVar();                 // 파면 방향 (∂p/∂a)
         const a = dot(h.sub(f.mul(u)), ea).div(dot(ea, ea)).toVar();
         If(a.greaterThanEqual(0).and(a.lessThan(1)).and(u.greaterThanEqual(0)).and(u.lessThanEqual(1)), () => {
-          const v = mix(q2.x, q2.y, a);
+          const v = mix(q2.x, q2.y, a).toVar();
           const str = mix(q2.z, q2.w, a);
-          // 텍셀 중심 보정: U=0, U=1이 정확히 첫/끝 텍셀 중심에 오게
-          const uv = vec2(u.mul((NU - 1) / NU).add(0.5 / NU), v.mul((NV - 1) / NV).add(0.5 / NV));
+          // 텍셀 중심 보정: U=0, U=1이 정확히 첫/끝 텍셀 중심에 오게. V > 1(bore)은 단면이 평평한 마지막 줄
+          const uv = vec2(u.mul((NU - 1) / NU).add(0.5 / NU), min(v, 1).mul((NV - 1) / NV).add(0.5 / NV));
           const def = texture(deformTex, uv).level(0);
           const der = texture(derivTex, uv).level(0);
           const fa = f.add(g.mul(a));                        // 가로지르는 방향 (∂p/∂u), 길이 ≈ W
           const Wl = length(fa);
           const nh = vec3(fa.x, 0, fa.y).div(Wl);
           const th = normalize(vec3(ea.x, 0, ea.y));
-          disp.addAssign(nh.mul(def.x).add(vec3(0, def.y, 0)).mul(str));
-          const tu = nh.mul(Wl.add(der.x.mul(str))).add(vec3(0, der.y.mul(str), 0));
+
+          // 무너진 뒤의 흰 물 띠(bore): 뒤에서 완만히 올라와 앞에서 급하게 떨어지는 계단
+          // V 0.7 ~ 1에서 생기고, V > 1에서는 진폭 비율 = 2 - V (해안에 가까울수록 낮아짐)
+          const isB = v.greaterThan(1);
+          const bw = select(isB, float(1), smoothstep(0.7, 1.0, v));
+          const bAmp = select(isB, float(2).sub(v), float(1)).mul(bw).mul(str).mul(BORE_H);
+          const tb = clamp(u.sub(UB - B_BACK).div(B_BACK), 0, 1);           // 뒤쪽 오르막
+          const tf = clamp(u.sub(UB - B_RISE).div(2 * B_RISE), 0, 1);       // 앞쪽 낙차
+          const sb = tb.mul(tb).mul(tb.mul(-2).add(3)), sf = float(1).sub(tf.mul(tf).mul(tf.mul(-2).add(3)));
+          const dsb = tb.mul(float(1).sub(tb)).mul(6 / B_BACK), dsf = tf.mul(float(1).sub(tf)).mul(-6 / (2 * B_RISE));
+          const bH = bAmp.mul(sb.mul(sf));
+          const bD = bAmp.mul(dsb.mul(sf).add(sb.mul(dsf)));                 // ∂높이/∂u (노멀용)
+          const bFoam = bw.mul(str).mul(sf).mul(smoothstep(UB - 0.25, UB - 0.03, u));
+
+          disp.addAssign(nh.mul(def.x).add(vec3(0, def.y, 0)).mul(str).add(vec3(0, bH, 0)));
+          const tu = nh.mul(Wl.add(der.x.mul(str))).add(vec3(0, der.y.mul(str).add(bD), 0));
           nAcc.addAssign(normalize(cross(tu, th)).sub(UP));  // (해안 쪽) × (+s 쪽) = 위
-          foam.assign(max(foam, def.z.mul(str)));
+          foam.assign(max(foam, max(def.z.mul(str), bFoam)));
           hitWave.assign(wq);
         });
       });

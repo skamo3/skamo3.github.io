@@ -87,15 +87,29 @@ export function coons(s, t) {
   return out;
 }
 
-// 경로 하나 추적: τ를 잘게 나눠 걸으며 시간·V 적분. 반환 = 시간순 샘플 [t, x, z, V]
+// 무너진 뒤의 흰 물 띠(bore)
+//   단면 애니메이션은 V = 1에서 평평하게 끝난다. 실제로는 무너진 물이 거품 띠가 되어 해변까지 밀려온다.
+//   그래서 V = 1 이후에도 경로를 해안선까지 계속 추적하고, 표의 V 칸에 "1 + (1 - bore 진폭 비율)"을 넣는다.
+//     V ≤ 1     : 단면 애니메이션 (0.7 ~ 1 사이에 bore가 서서히 생긴다)
+//     1 < V ≤ 2 : bore. 진폭 비율 = 2 - V (1 = BORE_H, 0 = 사라짐)
+//   진폭은 수심에 비례해 줄어든다 (부서진 파도의 높이 ≈ 수심의 일정 비율). 해안선에 닿으면 BORE_FADE초 동안 사라진다
+Object.assign(FRONT, { BORE_H: 0.9, BORE_MIN: 0.18, BORE_FADE: 2.5 });
+
+// 경로 하나 추적: τ를 잘게 나눠 걸으며 시간·V 적분. 반환 = 시간순 샘플 [t, x, z, V(위 규칙으로 인코딩)]
 function tracePath(s, steps = 3000) {
   const out = [];
   let t = 0, v = 0, [x, z] = coons(s, 0);
-  const push = () => out.push([t, x, z, v]);
+  let d1 = 0, amp = 1;                 // d1 = 다 무너진 순간의 수심, amp = bore 진폭 비율
+  const enc = () => (v < 1 ? v : 2 - amp);
+  const push = () => out.push([t, x, z, enc()]);
   const advanceV = (dt) => {
     const d = -terrainHeight(x, z);
     if (v < 0.5) v = Math.max(v, targetV(d > 0.05 ? FRONT.WAVE_H / d : 99));
-    if (v >= 0.5) v = Math.min(1, v + 0.125 * dt);   // 말리기 시작한 뒤에는 시간으로 진행 (0.5 → 1 약 4초)
+    if (v >= 0.5 && v < 1) {
+      v = Math.min(1, v + 0.125 * dt);   // 말리기 시작한 뒤에는 시간으로 진행 (0.5 → 1 약 4초)
+      if (v >= 1) d1 = Math.max(d, 0.3);
+    }
+    if (v >= 1) amp = Math.min(amp, Math.max(Math.min(d / d1, 1), FRONT.BORE_MIN));   // 얕아질수록 낮아짐 (다시 높아지지 않음)
   };
   advanceV(0); push();
   for (let i = 1; i <= steps; i++) {
@@ -105,10 +119,12 @@ function tracePath(s, steps = 3000) {
     const dt = dist / Math.min(Math.sqrt(9.81 * d), 9);          // 얕은 물 파속 √(g·d)
     x = nx; z = nz; t += dt;
     advanceV(dt); push();
-    if (v >= 1) break;               // 다 무너졌으면 더 갈 필요 없음 (이후로는 평평)
   }
   // 해안에 닿은 뒤에도 V가 1이 될 때까지 제자리에서 시간 진행
-  while (v < 1) { const dt = 0.1; t += dt; v = Math.min(1, v + 0.125 * dt); push(); }
+  while (v < 1) { const dt = 0.1; t += dt; advanceV(dt); push(); }
+  // 해안선에서 bore가 스며들며 사라진다
+  const a0 = amp;
+  for (let k = 1; k <= 10; k++) { t += FRONT.BORE_FADE / 10; amp = a0 * (1 - k / 10); push(); }
   return out;
 }
 
