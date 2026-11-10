@@ -8,15 +8,22 @@
 //     - 파면은 x를 따라 S개의 쿼드로 쪼개고, 쿼드 양 끝마다 애니메이션 파라미터 V를 따로 둔다.
 //       수심이 얕은 곳부터 V가 먼저 올라가서 부서지는 위치가 파면을 따라 퍼진다
 //     - 정점마다 모든 쿼드를 순회해 자기를 포함한 쿼드를 찾는다 (E2의 기준선. 비닝은 나중에)
+// P3: 파면을 Coons 패치 + 경로 추적으로 굽고(waveLUT), compute A가 매 프레임 그 표에서 쿼드를 만든다.
+//     - 파면 K개가 같은 표를 서로 다른 시간으로 읽는다 (연속으로 밀려오는 파도)
+//     - 파도마다 변주 표의 한 줄을 골라 강도로 곱한다. 0인 구간은 안 부서진다(gap)
+//     - 쿼드는 이제 평행사변형이 아니라 일반 사각형(이웃 쿼드와 모서리 공유). compute C는 쌍선형 역변환으로 (a, u)를 구한다
 //
 // 주의: 이 월드는 three/webgpu 빌드만 쓴다. 'three'(WebGL 빌드)와 섞지 않는다.
 import * as THREE from 'three/webgpu';
 import {
   Fn, instanceIndex, vertexIndex, instancedArray, attribute, texture, varying,
-  float, int, uint, vec2, vec3, mix, smoothstep, clamp, max, select, cross, normalize, dot,
-  Loop, If, transformNormalToView, directionToFaceDirection,
+  float, int, uint, vec2, vec3, vec4, mix, smoothstep, clamp, min, max, floor, sqrt, length, select,
+  cross, normalize, dot, Loop, If, transformNormalToView, directionToFaceDirection,
 } from 'three/tsl';
 import { bakeSection, SECTION_W, CREST_U } from './ocean-wave-section.js';
+import {
+  shoreZ, terrainHeight, smoothstepJS, bakeWaveLUT, sampleLUT, bakeVariation,
+} from './ocean-wave-coast.js';
 
 // ── 월드 좌표 규칙 ──
 // 단위 m, 수면 y = 0. 해안선은 x축을 따라 놓이고 바다는 -z 쪽, 육지는 +z 쪽.
@@ -28,40 +35,11 @@ const TERRAIN = { x0: -400, x1: 400, z0: -160, z1: 260, segX: 560, segZ: 420 };
 // (파면 근처만 촘촘하게 = 논문 4장의 테셀레이션 문제. 지금은 직선 파면이라 z 방향만 나눈다. E3에서 일반화)
 const WATER = {
   x0: -170, x1: 170, dx: 0.5,
-  z0: -160, zFine: -75, z1: 25, dzCoarse: 1, dzFine: 0.125,
+  z0: -160, zFine: -90, z1: 25, dzCoarse: 1, dzFine: 0.125,
 };
 
-// 파면 쿼드: x ∈ [-QX, QX]를 S개로 나눈다
-const QX = 130, S = 52;
-const WAVE_H = 2.7;              // 단면의 대표 파고 (H/d로 부서짐 판정)
-
-// 만(bay) 모양 해안선: 가운데가 육지 쪽으로 들어가고, 양옆(|x| > 110)은 곶이 바다 쪽으로 길게 나온다.
-export function shoreZ(x) {
-  return 14 * Math.exp(-((x / 60) ** 2)) - 4 - 125 * smoothstepJS(105, 175, Math.abs(x));
-}
-
-// 지형 높이 (해석적). 캐릭터 이동(P5)과 시뮬 바닥(P6~)도 이 함수를 공유한다.
-export function terrainHeight(x, z) {
-  const d = z - shoreZ(x);                 // + 육지 쪽 / - 바다 쪽, 해안선에서의 거리
-  const cape = smoothstepJS(105, 175, Math.abs(x));
-  if (d >= 0) {
-    // 완만한 모래사장 → 15~40 m 지점부터 사구로 솟음. 곶은 바위 언덕
-    const dune = 3.5 * smoothstepJS(15, 40, d);
-    const bumps = 0.35 * Math.sin(x * 0.13) * Math.sin(z * 0.21) * smoothstepJS(8, 25, d);
-    const hill = cape * (6 * smoothstepJS(0, 25, d) + 2.5 * Math.sin(x * 0.05 + z * 0.03));
-    return d * 0.05 + dune + bumps + hill;
-  }
-  // 바다 쪽: 해안 근처는 1/25 경사, 30 m 밖부터 더 빨리 깊어지다 14 m에서 평평
-  const s = -d;
-  const depth = 0.04 * s + 0.07 * softplus(s - 30, 6);
-  return -Math.min(depth, 14);
-}
-
-function smoothstepJS(a, b, x) {
-  const t = Math.min(Math.max((x - a) / (b - a), 0), 1);
-  return t * t * (3 - 2 * t);
-}
-function softplus(x, k) { return Math.log1p(Math.exp(x / k)) * k; }
+// 해안선·지형·파면 베이크는 ocean-wave-coast.js (three 없이 Node에서 검증 가능)
+export { shoreZ, terrainHeight };
 
 // ── 지형 메시 (CPU에서 높이·색 계산, 한 번만) ──
 function buildTerrain() {
@@ -149,67 +127,102 @@ function buildWaterGeometry(L) {
   return geo;
 }
 
-// ── 파면 상태 (CPU): 쿼드 S개, 꼭짓점(쿼드 경계) S+1개 ──
-// 직선 파면 하나가 해안으로 다가오고, 쿼드 경계마다 V를 따로 키운다.
-// P3에서 이 부분이 GPU의 compute A(waveLUT 샘플)로 옮겨간다.
-function createWaveFront() {
-  const edgeX = Array.from({ length: S + 1 }, (_, j) => -QX + (2 * QX * j) / S);
-  const v = new Float32Array(S + 1);
-  const strength = edgeX.map(x => 1 - smoothstepJS(QX - 35, QX, Math.abs(x)));   // 양 끝은 약하게 (gap 흉내)
-  const st = { zCrest: -150, v, edgeX, strength, wait: 0 };
-
-  // H/d → V. 깊은 물에서는 천천히 솟고, H/d ≈ 0.78 부근에서 말리기 시작(V = 0.5)
-  const target = r => {
-    const P = [[0.08, 0], [0.3, 0.3], [0.6, 0.45], [0.78, 0.5]];
-    if (r <= P[0][0]) return 0;
-    for (let i = 1; i < P.length; i++) {
-      if (r <= P[i][0]) { const t = (r - P[i - 1][0]) / (P[i][0] - P[i - 1][0]); return P[i - 1][1] + t * (P[i][1] - P[i - 1][1]); }
-    }
-    return 0.5;
+// ── 파도 스케줄러 (CPU): 활성 파면 K개의 시간 t_k만 관리한다. 모양은 전부 GPU가 waveLUT에서 읽는다 ──
+const PERIOD = [6, 8];                       // 파도 간격 (s, 이 범위에서 무작위)
+function createWaves(lutInfo, variationRows) {
+  const K = Math.ceil(lutInfo.T / PERIOD[0]) + 1;     // 동시에 살아 있을 수 있는 최대 파면 수
+  const slots = Array.from({ length: K }, () => ({ t: 0, row: 0, active: false }));
+  let seed = 7;                          // 첫 파도들에 gap이 보이게 고른 시드
+  const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  const st = { K, slots, timer: 0 };
+  st.spawn = (t0 = 0) => {
+    const s = slots.find(x => !x.active);
+    if (!s) return;
+    s.t = t0; s.row = Math.floor(rnd() * variationRows); s.active = true;
   };
-
   st.step = (dt) => {
-    if (st.wait > 0) { st.wait -= dt; return; }
-    // 파면 속도 = √(g·d) (얕은 물 근사). 직선 파면이라 가운데 수심으로 대표
-    const d0 = Math.max(-terrainHeight(0, st.zCrest), 0.6);
-    st.zCrest += Math.min(Math.sqrt(9.81 * d0), 9) * dt;
-    let done = true;
-    for (let j = 0; j <= S; j++) {
-      const d = -terrainHeight(edgeX[j], st.zCrest);
-      if (v[j] < 0.5) {
-        const r = d > 0.05 ? WAVE_H / d : 99;
-        v[j] = Math.max(v[j], target(r));
-      }
-      // 말리기 시작한 뒤에는 수심과 상관없이 시간으로 진행 (0.5 → 1 약 4초)
-      if (v[j] >= 0.5) v[j] = Math.min(1, v[j] + 0.125 * dt);
-      if (v[j] < 1) done = false;
-    }
-    if (done || st.zCrest > 40) {         // 다음 파도
-      st.zCrest = -150; v.fill(0); st.wait = 1.5;
-    }
+    for (const s of slots) if (s.active) { s.t += dt; if (s.t > lutInfo.T) s.active = false; }
+    st.timer -= dt;
+    if (st.timer <= 0) { st.spawn(); st.timer = PERIOD[0] + (PERIOD[1] - PERIOD[0]) * rnd(); }
   };
+  // 시작하자마자 볼 게 있게: 곧 부서질 파도 하나 + 막 출발한 파도 하나
+  st.spawn(8); st.spawn(1); st.timer = 5;
   return st;
 }
 
-// ── 수면: storage 버퍼 + compute C ──
+// ── 수면: storage 버퍼 + compute A(쿼드 생성) + compute C(수면 변형) ──
 function buildWater(section) {
   const L = waterLayout();
   const geo = buildWaterGeometry(L);
   const { GX, NC, COUNT } = L;
+  const { deformTex, derivTex, NU, NV } = section;
+  const W = SECTION_W;
 
   const posBuf = instancedArray(COUNT, 'vec3');     // 정점 위치
   const nrmBuf = instancedArray(COUNT, 'vec3');     // 정점 노멀
   const foamBuf = instancedArray(COUNT, 'float');   // 거품량
 
-  // 쿼드 버퍼: 쿼드마다 vec4 두 개
-  //   q0 = (원점 x, 원점 z, 파면 방향 벡터 x, z)     원점 = 뒤(먼바다)·왼쪽 모서리
-  //   q1 = (가로지르는 벡터 x, z, V왼, V오른)        가로지르는 벡터 길이 = 단면 폭 W
-  //   q2 = (강도왼, 강도오른, 0, 0)
-  const quadBuf = instancedArray(S * 3, 'vec4');
-  const quadArr = quadBuf.value.array;
+  // waveLUT: 행 = 시간, 열 = 파면 위 위치 s. 값 = (x, z, V, 등장 페이드). init 때 한 번 올린다
+  const lutInfo = bakeWaveLUT();
+  const { NT, NS, dtRow } = lutInfo;
+  const S = NS - 1;
+  const lutBuf = instancedArray(NT * NS, 'vec4');
+  lutBuf.value.array.set(lutInfo.lut);
+  lutBuf.value.needsUpdate = true;
 
-  const { deformTex, derivTex, NU, NV } = section;
+  // 변주 표: 행 = 변주 하나, 열 = s. 값 = 변형 강도
+  const vari = bakeVariation(16);
+  const varBuf = instancedArray(vari.rows * NS, 'float');
+  varBuf.value.array.set(vari.data);
+  varBuf.value.needsUpdate = true;
 
+  const waves = createWaves(lutInfo, vari.rows);
+  const K = waves.K, KS = K * S;
+  // 파면 상태: 파면마다 vec4 (t 초, 변주 행, 활성, 0). CPU가 매 프레임 올리는 유일한 데이터
+  const waveBuf = instancedArray(K, 'vec4');
+  const waveArr = waveBuf.value.array;
+
+  // 쿼드 버퍼: 쿼드마다 vec4 네 개
+  //   q0 = (뒤 왼쪽 xz, 뒤 오른쪽 xz)       뒤 = 먼바다 쪽 가장자리
+  //   q1 = (앞 왼쪽 xz, 앞 오른쪽 xz)       앞 = 해안 쪽 가장자리
+  //   q2 = (V 왼, V 오른, 강도 왼, 강도 오른)
+  //   q3 = (중심 xz, 반지름², 활성)         정점이 멀면 역변환 없이 바로 건너뛰는 용도
+  const quadBuf = instancedArray(KS * 4, 'vec4');
+
+  // ── compute A: 스레드 하나 = 쿼드 하나 (K × S) ──
+  // waveLUT에서 t_k 시각의 열 j-1 ~ j+2 마루 위치를 읽어 열마다 진행 방향(파면에 수직)을 구하고,
+  // 마루를 앞뒤로 늘려 사각형을 만든다. 이웃 쿼드와 같은 열 데이터를 쓰니 모서리가 정확히 맞물린다.
+  const back = CREST_U * W, fwd = (1 - CREST_U) * W;
+  const computeQuads = Fn(() => {
+    const i = int(instanceIndex);
+    const k = i.div(int(S)), j = i.mod(int(S));
+    const w = waveBuf.element(k);
+    const tr = clamp(w.x.div(dtRow), 0, NT - 1);
+    const i0 = int(floor(tr)), i1 = min(i0.add(1), int(NT - 1)), fr = tr.sub(float(i0));
+    const col = c => min(max(c, int(0)), int(NS - 1));
+    const lut = c => mix(lutBuf.element(i0.mul(NS).add(col(c))), lutBuf.element(i1.mul(NS).add(col(c))), fr);
+    const sm = lut(j.sub(1)).toVar(), s0 = lut(j).toVar(), s1 = lut(j.add(1)).toVar(), s2 = lut(j.add(2)).toVar();
+    // 파면 접선 (x, z) → 수직 = 진행 방향. 접선이 +x 쪽이면 (-tz, tx) = +z 쪽 (해안 쪽)
+    const perp = v => normalize(vec2(v.y.negate(), v.x));
+    const n0 = perp(s1.xy.sub(sm.xy)).toVar(), n1 = perp(s2.xy.sub(s0.xy)).toVar();
+    const b0 = s0.xy.sub(n0.mul(back)), b1 = s1.xy.sub(n1.mul(back));
+    const f0 = s0.xy.add(n0.mul(fwd)), f1 = s1.xy.add(n1.mul(fwd));
+    const row = int(w.y).mul(NS);
+    const str0 = varBuf.element(row.add(j)).mul(s0.w), str1 = varBuf.element(row.add(j).add(1)).mul(s1.w);
+    const cen = b0.add(b1).add(f0).add(f1).mul(0.25).toVar();
+    const d2 = v => dot(v.sub(cen), v.sub(cen));
+    const r2 = max(max(d2(b0), d2(b1)), max(d2(f0), d2(f1))).add(1);
+    const active = w.z.greaterThan(0.5).and(max(str0, str1).greaterThan(0.001)).and(min(s0.z, s1.z).lessThan(0.999));
+    const o = i.mul(4);
+    quadBuf.element(o).assign(vec4(b0, b1));
+    quadBuf.element(o.add(1)).assign(vec4(f0, f1));
+    quadBuf.element(o.add(2)).assign(vec4(s0.z, s1.z, str0, str1));
+    quadBuf.element(o.add(3)).assign(vec4(cen, r2, select(active, float(1), float(0))));
+  })().compute(KS);
+
+  // ── compute C: 스레드 하나 = 수면 정점 하나 ──
+  const cr = (a, b) => a.x.mul(b.y).sub(a.y.mul(b.x));
+  const UP = vec3(0, 1, 0);
   const computeSurface = Fn(() => {
     const i = instanceIndex;
     const ix = i.mod(uint(GX));
@@ -221,41 +234,54 @@ function buildWater(section) {
     const p = vec2(x, z);
 
     const disp = vec3(0).toVar();
-    const tu = vec3(0, 0, 1).toVar();      // 가로지르는 방향 탄젠트 (쿼드 밖이면 +z)
-    const tf = vec3(1, 0, 0).toVar();      // 파면 방향 탄젠트
+    const nAcc = vec3(0).toVar();          // 쿼드별 노멀의 "평평함에서 벗어난 양"을 더한다
     const foam = float(0).toVar();
+    // 한 파면 안에서는 쿼드 하나만 쓴다. 이웃 쿼드가 공유하는 모서리 위 정점은 부동소수 오차로
+    // 양쪽 모두에 들어갈 수 있는데, 그러면 변위가 두 번 더해져 가시처럼 튄다
+    const hitWave = int(-1).toVar();
 
-    // 전체 순회: 정점 하나가 쿼드 S개를 전부 검사한다 (O(V·Q), E2 기준선)
-    Loop(S, ({ i: q }) => {
-      const q0 = quadBuf.element(q.mul(3));
-      const q1 = quadBuf.element(q.mul(3).add(1));
-      const q2 = quadBuf.element(q.mul(3).add(2));
-      const o = q0.xy, t = q0.zw, n = q1.xy;
-      const d = p.sub(o);
-      // 평행사변형 안 좌표 (a = 파면 방향 0~1, u = 가로지르는 방향 0~1): 2x2 역행렬
-      const det = t.x.mul(n.y).sub(t.y.mul(n.x));
-      const a = d.x.mul(n.y).sub(d.y.mul(n.x)).div(det);
-      const u = t.x.mul(d.y).sub(t.y.mul(d.x)).div(det);
-      If(a.greaterThanEqual(0).and(a.lessThan(1)).and(u.greaterThanEqual(0)).and(u.lessThanEqual(1)), () => {
-        const v = mix(q1.z, q1.w, a);
-        const str = mix(q2.x, q2.y, a);
-        // 텍셀 중심 보정: U=0, U=1이 정확히 첫/끝 텍셀 중심에 오게
-        const uv = vec2(u.mul((NU - 1) / NU).add(0.5 / NU), v.mul((NV - 1) / NV).add(0.5 / NV));
-        const def = texture(deformTex, uv).level(0);
-        const der = texture(derivTex, uv).level(0);
-        const W = n.length();
-        const nh = vec3(n.x, 0, n.y).div(W);                  // 가로지르는 단위벡터 (해안 쪽)
-        const th = normalize(vec3(t.x, 0, t.y));
-        disp.assign(nh.mul(def.x).add(vec3(0, def.y, 0)).mul(str));
-        // ∂P/∂u = 평평한 면의 W·n̂ + 오프셋 미분
-        tu.assign(nh.mul(W.add(der.x.mul(str))).add(vec3(0, der.y.mul(str), 0)));
-        tf.assign(th);
-        foam.assign(def.z.mul(str));
+    // 전체 순회: 정점 하나가 쿼드 K×S개를 전부 검사한다 (O(V·Q), E2 기준선). 먼 쿼드는 원 검사로 바로 건너뜀
+    Loop(KS, ({ i: q }) => {
+      const q3 = quadBuf.element(q.mul(4).add(3));
+      const dc = p.sub(q3.xy);
+      const wq = q.div(int(S));
+      If(q3.w.greaterThan(0.5).and(wq.notEqual(hitWave)).and(dot(dc, dc).lessThan(q3.z)), () => {
+        const q0 = quadBuf.element(q.mul(4));
+        const q1 = quadBuf.element(q.mul(4).add(1));
+        const q2 = quadBuf.element(q.mul(4).add(2));
+        // 쌍선형 역변환: p = A + e·a + f·u + g·a·u 를 (a, u)에 대해 푼다 (u에 대한 2차식)
+        const A = q0.xy, B = q0.zw, D = q1.xy, C = q1.zw;
+        const e = B.sub(A), f = D.sub(A), g = A.sub(B).add(C).sub(D), h = p.sub(A);
+        const k2 = cr(g, f), k1 = cr(e, f).add(cr(h, g)), k0 = cr(h, e);
+        const sq = sqrt(max(k1.mul(k1).sub(k0.mul(k2).mul(4)), 0));
+        // 수치적으로 안정한 근 공식: k2 → 0(평행사변형)이어도 uA는 유한하다
+        const qq = k1.add(select(k1.greaterThanEqual(0), sq, sq.negate())).mul(-0.5);
+        const uA = k0.div(qq), uB = qq.div(k2);
+        const u = select(uA.greaterThanEqual(0).and(uA.lessThanEqual(1)), uA, uB).toVar();
+        const ea = e.add(g.mul(u)).toVar();                 // 파면 방향 (∂p/∂a)
+        const a = dot(h.sub(f.mul(u)), ea).div(dot(ea, ea)).toVar();
+        If(a.greaterThanEqual(0).and(a.lessThan(1)).and(u.greaterThanEqual(0)).and(u.lessThanEqual(1)), () => {
+          const v = mix(q2.x, q2.y, a);
+          const str = mix(q2.z, q2.w, a);
+          // 텍셀 중심 보정: U=0, U=1이 정확히 첫/끝 텍셀 중심에 오게
+          const uv = vec2(u.mul((NU - 1) / NU).add(0.5 / NU), v.mul((NV - 1) / NV).add(0.5 / NV));
+          const def = texture(deformTex, uv).level(0);
+          const der = texture(derivTex, uv).level(0);
+          const fa = f.add(g.mul(a));                        // 가로지르는 방향 (∂p/∂u), 길이 ≈ W
+          const Wl = length(fa);
+          const nh = vec3(fa.x, 0, fa.y).div(Wl);
+          const th = normalize(vec3(ea.x, 0, ea.y));
+          disp.addAssign(nh.mul(def.x).add(vec3(0, def.y, 0)).mul(str));
+          const tu = nh.mul(Wl.add(der.x.mul(str))).add(vec3(0, der.y.mul(str), 0));
+          nAcc.addAssign(normalize(cross(tu, th)).sub(UP));  // (해안 쪽) × (+s 쪽) = 위
+          foam.assign(max(foam, def.z.mul(str)));
+          hitWave.assign(wq);
+        });
       });
     });
 
     posBuf.element(i).assign(vec3(x, 0, z).add(disp));
-    nrmBuf.element(i).assign(normalize(cross(tu, tf)));   // (+z) × (+x) = +y : 평평하면 위를 향함
+    nrmBuf.element(i).assign(normalize(UP.add(nAcc)));
     foamBuf.element(i).assign(foam);
   })().compute(COUNT);
 
@@ -280,23 +306,28 @@ function buildWater(section) {
   const mesh = new THREE.Mesh(geo, mat);
   mesh.frustumCulled = false;  // 실제 위치는 버퍼에 있어서 geometry의 경계구를 믿을 수 없다
 
-  // CPU 파면 상태 → 쿼드 버퍼
-  const front = createWaveFront();
-  const W = SECTION_W;
-  const segLen = (2 * QX) / S;
-  function uploadQuads() {
-    const zBack = front.zCrest - CREST_U * W;
-    for (let q = 0; q < S; q++) {
-      const o = q * 12;
-      quadArr[o] = front.edgeX[q]; quadArr[o + 1] = zBack; quadArr[o + 2] = segLen; quadArr[o + 3] = 0;
-      quadArr[o + 4] = 0; quadArr[o + 5] = W; quadArr[o + 6] = front.v[q]; quadArr[o + 7] = front.v[q + 1];
-      quadArr[o + 8] = front.strength[q]; quadArr[o + 9] = front.strength[q + 1]; quadArr[o + 10] = 0; quadArr[o + 11] = 0;
+  function uploadWaves() {
+    waves.slots.forEach((s, k) => {
+      waveArr[k * 4] = s.t; waveArr[k * 4 + 1] = s.row; waveArr[k * 4 + 2] = s.active ? 1 : 0; waveArr[k * 4 + 3] = 0;
+    });
+    waveBuf.value.needsUpdate = true;
+  }
+
+  // 카메라가 따라갈 파도: 아직 다 무너지지 않은 것 중 가장 오래된 파도의 가운데 마루
+  const mid = S / 2;
+  function focus() {
+    let best = null;
+    for (const s of waves.slots) {
+      if (!s.active) continue;
+      const c = sampleLUT(lutInfo, s.t, mid);
+      if (c[2] < 0.97 && (!best || s.t > best.t)) best = { t: s.t, x: c[0], z: c[1], v: c[2] };
     }
-    quadBuf.value.needsUpdate = true;
+    return best;
   }
 
   return {
-    mesh, computeSurface, front, uploadQuads, layout: L, posBuf,
+    mesh, computeQuads, computeSurface, waves, uploadWaves, focus, layout: L, posBuf, lutInfo,
+    S, K, KS,
     triCount: (L.GX - 1) * (L.GZ - 1) * 2,
     dispose() { deformTex.dispose(); derivTex.dispose(); },
   };
@@ -373,7 +404,7 @@ export default {
   async create({ renderer, canvas }) {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x9cc7e4);
-    scene.fog = new THREE.Fog(0x9cc7e4, 120, 700);
+    scene.fog = new THREE.Fog(0x9cc7e4, 220, 900);
 
     const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 3000);
     // 시작 시점: 파도 마루를 따라가며 옆·앞에서 낮게 (말린 안쪽이 보이는 각도). F로 끄고 켠다
@@ -397,12 +428,13 @@ export default {
     const backend = renderer.backend && renderer.backend.isWebGPUBackend ? 'WebGPU' : 'WebGL2 (WebGPU 미지원 폴백)';
     const hud = createHud(canvas);
     let hudT = 0, frames = 0, fpsT = 0, fps = 0;
-    const vCenter = () => water.front.v[S / 2];
+    let foc = water.focus();
+    const camT = new THREE.Vector3(foc ? foc.x : 0, 1.5, foc ? foc.z : -150);
 
     // 관찰용 시간 조절: Space = 일시정지, 1/2/3 = 0.25x/1x/2x
     let paused = false, timeScale = 1, follow = true;
-    // C로 돌아가는 시점: 옆에서 단면 보기 / 앞·옆 비스듬히 / 높은 곳에서 해변 전체
-    const VIEWS = [[-1.25, 1.42, 26], [-Math.PI / 2, 1.5, 22], [-0.5, 0.95, 150]];
+    // C로 돌아가는 시점: 앞·옆 비스듬히 / 옆에서 단면 / 높은 곳에서 비스듬히 / 먼바다 위에서 만 전체 (파면이 휘는 모양과 gap)
+    const VIEWS = [[-1.25, 1.42, 26], [-Math.PI / 2, 1.5, 22], [-0.5, 0.95, 150], [Math.PI, 0.7, 210]];
     let view = 0;
     const onKey = e => {
       if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
@@ -425,7 +457,7 @@ export default {
       for (let iz = 0; iz < Lw.GZ; iz++) { const k = (iz * Lw.GX + ix) * stride; pts.push([+a[k + 2].toFixed(3), +a[k + 1].toFixed(3)]); }
       let el = document.getElementById('ocean-debug');
       if (!el) { el = document.createElement('pre'); el.id = 'ocean-debug'; el.style.display = 'none'; document.body.appendChild(el); }
-      el.textContent = JSON.stringify({ v: water.front.v[S / 2], zCrest: water.front.zCrest, stride, pts });
+      el.textContent = JSON.stringify({ v: foc && foc.v, zCrest: foc && foc.z, stride, pts });
     };
     window.addEventListener('keydown', onDebugKey);
 
@@ -434,22 +466,27 @@ export default {
       update(dt) {
         dt = Math.min(dt, 0.1);
         const simDt = paused ? 0 : dt * timeScale;
-        water.front.step(simDt);
-        water.uploadQuads();
-        renderer.compute(water.computeSurface);
-        if (follow) orbit.setTarget(0, 1.5, water.front.zCrest);
+        water.waves.step(simDt);
+        water.uploadWaves();
+        renderer.compute(water.computeQuads);      // A: waveLUT → 쿼드
+        renderer.compute(water.computeSurface);    // C: 쿼드 → 수면 정점
+        foc = water.focus();
+        if (follow && foc) {
+          // 따라가던 파도가 다 무너지면 다음 파도로 넘어가는데, 그때 카메라가 튀지 않게 부드럽게 옮긴다
+          camT.lerp(new THREE.Vector3(foc.x, 1.5, foc.z), 1 - Math.exp(-dt * 3));
+          orbit.setTarget(camT.x, camT.y, camT.z);
+        }
 
         frames++; fpsT += dt; hudT += dt;
         if (fpsT >= 0.5) { fps = frames / fpsT; frames = 0; fpsT = 0; }
         if (hudT >= 0.2) {
           hudT = 0;
-          const vs = water.front.v;
-          let vmax = 0; for (const x of vs) vmax = Math.max(vmax, x);
+          const alive = water.waves.slots.filter(s => s.active).length;
           hud.textContent = [
             `backend   ${backend}   ${fps.toFixed(0)} fps`,
             `수면      정점 ${water.layout.COUNT.toLocaleString()} · 삼각형 ${water.triCount.toLocaleString()}`,
-            `파면      쿼드 ${S} · 정점당 검사 ${S} (전체 순회)`,
-            `crest z   ${water.front.zCrest.toFixed(1)} m   V 가운데 ${vCenter().toFixed(2)} / 최대 ${vmax.toFixed(2)}`,
+            `파면      ${alive}/${water.K}개 · 쿼드 ${water.KS} (${water.K} × ${water.S}) · 정점당 검사 ${water.KS} (전체 순회)`,
+            `따라가는 파도  t ${foc ? foc.t.toFixed(1) : '-'} / ${water.lutInfo.T.toFixed(1)} s   crest z ${foc ? foc.z.toFixed(1) : '-'} m   V 가운데 ${foc ? foc.v.toFixed(2) : '-'}`,
             `시간      ${paused ? '일시정지' : timeScale + 'x'}   (Space 정지 · 1/2/3 = 0.25x/1x/2x)
 카메라    ${follow ? '파도 따라가기' : '자유'}   (F 따라가기 · C 시점 · 드래그 회전 · 휠 줌)`,
           ].join('\n');
