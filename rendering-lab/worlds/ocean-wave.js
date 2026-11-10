@@ -12,18 +12,21 @@
 //     - 파면 K개가 같은 표를 서로 다른 시간으로 읽는다 (연속으로 밀려오는 파도)
 //     - 파도마다 변주 표의 한 줄을 골라 강도로 곱한다. 0인 구간은 안 부서진다(gap)
 //     - 쿼드는 이제 평행사변형이 아니라 일반 사각형(이웃 쿼드와 모서리 공유). compute C는 쌍선형 역변환으로 (a, u)를 구한다
+// P4: 셰이딩은 ocean-wave-shading.js에서 직접 계산한다 (하늘 반사 + Fresnel + 물속 산란 + 투과광 + 거품).
+//     거품은 프레임 사이에 남는다: compute C가 이전 거품을 조금씩 줄여 가며 새 거품과 max를 취한다
 //
 // 주의: 이 월드는 three/webgpu 빌드만 쓴다. 'three'(WebGL 빌드)와 섞지 않는다.
 import * as THREE from 'three/webgpu';
 import {
   Fn, instanceIndex, vertexIndex, instancedArray, attribute, texture, varying,
   float, int, uint, vec2, vec3, vec4, mix, smoothstep, clamp, min, max, floor, sqrt, length, select,
-  cross, normalize, dot, Loop, If, transformNormalToView, directionToFaceDirection,
+  cross, normalize, dot, Loop, If, uniform, frontFacing, positionWorld, positionWorldDirection,
 } from 'three/tsl';
 import { bakeSection, SECTION_W, CREST_U } from './ocean-wave-section.js';
 import {
   shoreZ, terrainHeight, smoothstepJS, bakeWaveLUT, sampleLUT, bakeVariation,
 } from './ocean-wave-coast.js';
+import { SUN, HORIZON_HEX, skyColor, rippleNormal, shadeWater } from './ocean-wave-shading.js';
 
 // ── 월드 좌표 규칙 ──
 // 단위 m, 수면 y = 0. 해안선은 x축을 따라 놓이고 바다는 -z 쪽, 육지는 +z 쪽.
@@ -223,6 +226,7 @@ function buildWater(section) {
   // ── compute C: 스레드 하나 = 수면 정점 하나 ──
   const cr = (a, b) => a.x.mul(b.y).sub(a.y.mul(b.x));
   const UP = vec3(0, 1, 0);
+  const foamDecay = uniform(1);          // 프레임마다 exp(-dt / 거품 수명)
   const computeSurface = Fn(() => {
     const i = instanceIndex;
     const ix = i.mod(uint(GX));
@@ -282,26 +286,27 @@ function buildWater(section) {
 
     posBuf.element(i).assign(vec3(x, 0, z).add(disp));
     nrmBuf.element(i).assign(normalize(UP.add(nAcc)));
-    foamBuf.element(i).assign(foam);
+    // 거품 잔상: 파도가 지나간 자리에 거품이 몇 초 남았다가 사라진다 (격자점이 xz에 고정이라 그 자리에 남는다)
+    foamBuf.element(i).assign(max(foam, foamBuf.element(i).mul(foamDecay)));
   })().compute(COUNT);
 
-  const mat = new THREE.MeshStandardNodeMaterial({
-    transparent: true, side: THREE.DoubleSide, roughness: 0.3, metalness: 0.0,
-  });
+  // 조명은 shadeWater가 직접 계산하므로 라이트를 쓰지 않는 Basic 재질에 색만 꽂는다
+  const mat = new THREE.MeshBasicNodeMaterial({ transparent: true, side: THREE.DoubleSide });
   mat.positionNode = posBuf.element(vertexIndex);   // 렌더 패스가 컴퓨트 결과를 그대로 읽음
-  const nLocal = varying(nrmBuf.element(vertexIndex));
-  mat.normalNode = directionToFaceDirection(transformNormalToView(normalize(nLocal)));  // 튜브 안쪽(뒷면)은 노멀 반전
+  const nW = normalize(varying(nrmBuf.element(vertexIndex)));
   const vFoam = varying(foamBuf.element(vertexIndex));
   const vHeight = varying(posBuf.element(vertexIndex).y);
+  const bed = attribute('aBed', 'float');
 
-  // P4 전까지 임시 셰이딩: 수심 색 + 거품 + 솟은 물은 불투명하게
-  const depth = clamp(attribute('aBed', 'float').negate(), 0.0, 20.0);
-  const shallow = vec3(0.18, 0.62, 0.62), deep = vec3(0.02, 0.16, 0.30);
-  const water = mix(shallow, deep, smoothstep(0.0, 8.0, depth));
-  // 솟아오른 물(마루·lip)은 얇아서 빛이 비쳐 밝은 청록으로 (투과광 흉내, P4에서 제대로)
-  const lifted = mix(water, vec3(0.16, 0.66, 0.62), smoothstep(0.8, 3.2, vHeight).mul(0.75));
-  mat.colorNode = mix(lifted, vec3(0.92, 0.95, 0.97), clamp(vFoam, 0, 1));
-  mat.opacityNode = max(mix(float(0.35), float(0.95), smoothstep(0.0, 4.0, depth)), smoothstep(0.1, 0.8, vHeight));
+  const nFace = select(frontFacing, nW, nW.negate());            // 튜브 안쪽(뒷면)은 노멀 반전
+  const lift = smoothstep(0.3, 2.5, vHeight);                      // 솟아오른 정도 (마루·lip)
+  const N = rippleNormal(nFace, positionWorld, float(1).sub(lift.mul(0.7)));
+  const thickness = max(positionWorld.y.sub(bed), 0);
+  // 물가 거품: 물이 얇아지는 해안선 근처에 늘 조금 있다
+  const shoreFoam = float(1).sub(smoothstep(0.05, 0.6, thickness)).mul(0.7);
+  const shade = shadeWater(N, positionWorld, thickness, max(vFoam, shoreFoam), lift);
+  mat.colorNode = shade.col;
+  mat.opacityNode = shade.alpha;
 
   const mesh = new THREE.Mesh(geo, mat);
   mesh.frustumCulled = false;  // 실제 위치는 버퍼에 있어서 geometry의 경계구를 믿을 수 없다
@@ -326,7 +331,7 @@ function buildWater(section) {
   }
 
   return {
-    mesh, computeQuads, computeSurface, waves, uploadWaves, focus, layout: L, posBuf, lutInfo,
+    mesh, computeQuads, computeSurface, waves, uploadWaves, focus, layout: L, posBuf, lutInfo, foamDecay,
     S, K, KS,
     triCount: (L.GX - 1) * (L.GZ - 1) * 2,
     dispose() { deformTex.dispose(); derivTex.dispose(); },
@@ -335,7 +340,10 @@ function buildWater(section) {
 
 // 수면 격자 밖 먼 바다: 격자를 ㄷ자로 둘러싼 불투명 띠 (격자와 겹치지 않게)
 function buildFarSea() {
-  const mat = new THREE.MeshStandardNodeMaterial({ color: 0x0b3a58, roughness: 0.08 });
+  // 격자 수면과 같은 셰이딩 (평평하고 깊은 물): 이음매에서 색이 튀지 않게
+  const mat = new THREE.MeshBasicNodeMaterial();
+  const sh = shadeWater(rippleNormal(vec3(0, 1, 0), positionWorld), positionWorld, float(14), float(0), float(0));
+  mat.colorNode = sh.col;
   const g = new THREE.Group();
   const R = 2000, { x0, x1, z0, z1 } = WATER;
   const strip = (ax, bx, az, bz) => {
@@ -403,8 +411,8 @@ function createHud(canvas) {
 export default {
   async create({ renderer, canvas }) {
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x9cc7e4);
-    scene.fog = new THREE.Fog(0x9cc7e4, 220, 900);
+    scene.backgroundNode = skyColor(positionWorldDirection);   // 물 반사와 같은 하늘 함수
+    scene.fog = new THREE.Fog(HORIZON_HEX, 220, 900);
 
     const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 3000);
     // 시작 시점: 파도 마루를 따라가며 옆·앞에서 낮게 (말린 안쪽이 보이는 각도). F로 끄고 켠다
@@ -413,7 +421,7 @@ export default {
 
     scene.add(new THREE.HemisphereLight(0xcfe6ff, 0x8a7a5a, 1.1));
     const sun = new THREE.DirectionalLight(0xfff1d6, 2.2);
-    sun.position.set(-60, 80, -120);   // 바다 쪽에서 비치는 역광
+    sun.position.set(SUN.x, SUN.y, SUN.z);   // 바다 쪽에서 비치는 역광 (물 셰이딩과 같은 방향)
     scene.add(sun);
 
     const section = buildSectionTextures();
@@ -468,6 +476,7 @@ export default {
         const simDt = paused ? 0 : dt * timeScale;
         water.waves.step(simDt);
         water.uploadWaves();
+        water.foamDecay.value = Math.exp(-simDt / 3.5);   // 거품 수명 약 3.5초
         renderer.compute(water.computeQuads);      // A: waveLUT → 쿼드
         renderer.compute(water.computeSurface);    // C: 쿼드 → 수면 정점
         foc = water.focus();
