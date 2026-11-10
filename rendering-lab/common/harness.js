@@ -54,7 +54,9 @@ export function createHarness(initialCanvas) {
     let r;
     if (want === 'webgpu') {
       const { WebGPURenderer } = await import('three/webgpu');
-      r = new WebGPURenderer({ canvas, antialias: true });
+      // trackTimestamp: GPU 타임스탬프 쿼리로 패스별 ms를 잰다 (지원 안 하는 기기에서는 three가 알아서 끈다).
+      // 켜 두면 월드가 renderer.resolveTimestampsAsync()로 매 프레임 비워 줘야 쿼리 풀이 넘치지 않는다
+      r = new WebGPURenderer({ canvas, antialias: true, trackTimestamp: true });
       await r.init();              // 어댑터/디바이스 획득. WebGPU가 없으면 WebGL2 백엔드로 폴백
     } else {
       r = new THREE.WebGLRenderer({ canvas, antialias: true });

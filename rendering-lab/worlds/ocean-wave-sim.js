@@ -19,6 +19,7 @@ import * as THREE from 'three/webgpu';
 import {
   Fn, instanceIndex, instancedArray, uniform, float, int, vec2, vec4, uvec2,
   select, If, max, min, clamp, abs, sqrt, exp, log, sin, smoothstep, floor, length, textureStore, texture,
+  atomicAdd, atomicStore, uint,
 } from 'three/tsl';
 
 export const SIM = {
@@ -35,6 +36,7 @@ export const SIM = {
   NUDGE: 4,                // SWE: 베이크 수면으로 끌어당기는 빠르기 (1/s)
   NUDGE_D: [0.08, 0.3],     // SWE: 이 잔잔한 수심 사이에서 끌어당김이 0 → 1 (얕은 쪽은 시뮬이 자유롭게)
   DRY: 0.004,              // SWE: 이보다 얕으면 마른 셀
+  CALM: 3,                 // E11: 창 전체 Σ(|η| + 0.1|v|) (m·셀)가 이보다 작으면 잔잔함. 128²에서 셀 평균 0.2 mm
 };
 
 // ── 지형 높이의 TSL 판 (ocean-wave-coast.js terrainHeight와 같은 식) ──
@@ -229,6 +231,16 @@ export function createSim({ posBuf, mesh, N = SIM.N, DX = SIM.DX }) {
     textureStore(tex, uvec2(c.tx, c.tz), vec4(delta(c.t), select(edge, float(0), gx), select(edge, float(0), gz), st.element(c.t))).toWriteOnly();
   })().compute(NN);
 
+  // ── 에너지 (E11): 셀마다 |η| + 0.1·|v| 를 1e4배 정수로 바꿔 원자적 덧셈. CPU가 가끔 비동기로 읽는다 ──
+  const energy = instancedArray(1, 'uint').toAtomic();
+  const energyKernel = Fn(() => {
+    const t = int(instanceIndex);
+    const e = abs(st.element(t)).add(abs(fl.element(t).x).mul(0.1)).mul(1e4);
+    If(e.greaterThan(0.5), () => { atomicAdd(energy.element(0), uint(e)); });
+  })().compute(NN);
+  // 원자 버퍼는 atomicStore로만 비워진다 (그냥 assign하면 아무 일도 안 일어나서 값이 계속 쌓인다)
+  const clearEnergy = Fn(() => { atomicStore(energy.element(0), uint(0)); })().compute(1);
+
   const MODELS = {
     linear: { inject: linInject, steps: [linVel, linPos], out: linOut },
     swe: { inject: sweInject, steps: [sweFlux, sweDepth], out: sweOut },
@@ -244,30 +256,54 @@ export function createSim({ posBuf, mesh, N = SIM.N, DX = SIM.DX }) {
 
   const sim = {
     N, DX, tex, model: 'swe', acc: 0, steps: 0, cells: NN,
+    dtMode: 'fixed',          // E9: 'fixed' = 고정 dt 누적기 / 'variable' = 프레임 dt로 한 스텝
+    skipCalm: false,          // E11: 잔잔하면(에너지 < ε, 몸이 안 움직임) 시뮬 전체를 건너뜀 (linear 모델만)
+    energy: 1e9, skipped: false, srcMoving: true,   // energy = 창 전체 Σ|η| + 0.1·Σ|v| (E11에서만 잰다)
     bufs: { st, fl, tag },                 // 디버그 읽기용
+    kernels: MODELS,                       // 벤치마크용 (스텝만 여러 번 돌려 스텝당 비용을 잰다)
     sample, weight,
     // 창 위치 + 몸 소스 갱신 (프레임마다). sources: [{ x, z, r, sub }] × 3
     setFrame(px, pz, sources) {
       const ox = Math.round(px / DX) - N / 2, oz = Math.round(pz / DX) - N / 2;
       org.value.set(ox, oz);
       orgM.value.set(((ox % N) + N) % N, ((oz % N) + N) % N);
+      let moved = 0;
       for (let k = 0; k < NSRC; k++) {
         prev[k].value.copy(cur[k].value);
         const s = sources[k];
         cur[k].value.set(s.x, s.z, s.r, s.sub);
+        moved += Math.abs(prev[k].value.x - s.x) + Math.abs(prev[k].value.y - s.z) + Math.abs(prev[k].value.w - s.sub);
       }
+      // 다리가 1 mm 이상 움직이거나 잠긴 높이가 바뀌면 "움직임" (팔다리 흔들림이 멈춰 가는 꼬리는 무시)
+      sim.srcMoving = moved > 1e-3;
     },
     // 고정 dt 누적기로 서브스텝을 돌린다. 반환: 이번 프레임 스텝 수
-    run(renderer, dt) {
+    // exec(node, 라벨): 컴퓨트 실행 + GPU 시간 기록 (없으면 그냥 실행)
+    run(renderer, dt, exec = n => renderer.compute(n)) {
       const m = MODELS[sim.model];
-      renderer.compute(m.inject);
-      sim.acc += dt;
+      // E11: 잔잔하면 건너뜀. 텍스처에는 마지막(잔잔한) 상태가 남아 있다
+      sim.skipped = sim.skipCalm && sim.model === 'linear' && !sim.srcMoving && sim.energy < SIM.CALM;
+      if (sim.skipped || dt <= 0) { sim.steps = 0; return 0; }
+      exec(m.inject, 'S');
       let n = 0;
-      while (sim.acc >= SIM.STEP && n < SIM.MAX_STEPS) { sim.acc -= SIM.STEP; n++; }
-      if (n === SIM.MAX_STEPS) sim.acc = 0;
-      dtU.value = SIM.STEP;
-      for (let i = 0; i < n; i++) for (const k of m.steps) renderer.compute(k);
-      renderer.compute(m.out);
+      if (sim.dtMode === 'variable') {
+        // E9: 프레임 dt 그대로 한 스텝. 프레임이 떨어지면 CFL을 넘어 터질 수 있다
+        n = 1; dtU.value = dt;
+      } else {
+        sim.acc += dt;
+        while (sim.acc >= SIM.STEP && n < SIM.MAX_STEPS) { sim.acc -= SIM.STEP; n++; }
+        if (n === SIM.MAX_STEPS) sim.acc = 0;
+        dtU.value = SIM.STEP;
+      }
+      for (let i = 0; i < n; i++) for (const k of m.steps) exec(k, 'S');
+      exec(m.out, 'S');
+      if (sim.skipCalm && sim.model === 'linear' && !sim._ePending) {
+        // 에너지 읽기: 한 번에 하나만 걸어 둔다
+        exec(clearEnergy, 'S'); exec(energyKernel, 'S');
+        sim._ePending = true;
+        renderer.getArrayBufferAsync(energy.value).then(b => { sim.energy = new Uint32Array(b)[0] / 1e4; sim._ePending = false; })
+          .catch(() => { sim._ePending = false; });
+      }
       sim.steps = n;
       frameDt.value = dt;
       return n;
