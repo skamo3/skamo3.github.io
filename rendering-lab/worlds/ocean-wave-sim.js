@@ -31,9 +31,9 @@ export const SIM = {
   SPONGE: 10, SPONGE_W: 10,  // 흡수층: 가장자리에서 감쇠율 (1/s), 두께 (셀)
   FADE0: 3, FADE1: 14,     // 합성 가중치: 가장자리 셀 수 → 0 ~ 1
   GAIN: 1,                 // 몸이 밀어낸 부피 → 수면 변화 배율 (1 = 부피 보존)
-  FRICTION: 0.6,           // SWE 유량 감쇠 (1/s)
-  NUDGE: 3,                // SWE: 베이크 수면으로 끌어당기는 빠르기 (1/s)
-  NUDGE_D: [0.2, 0.5],     // SWE: 이 잔잔한 수심 사이에서 끌어당김이 0 → 1 (얕은 쪽은 시뮬이 자유롭게)
+  FRICTION: 0.15,          // SWE 유량 감쇠 (1/s)
+  NUDGE: 4,                // SWE: 베이크 수면으로 끌어당기는 빠르기 (1/s)
+  NUDGE_D: [0.08, 0.3],     // SWE: 이 잔잔한 수심 사이에서 끌어당김이 0 → 1 (얕은 쪽은 시뮬이 자유롭게)
   DRY: 0.004,              // SWE: 이보다 얕으면 마른 셀
 };
 
@@ -104,12 +104,13 @@ export function createSim({ posBuf, mesh, N = SIM.N, DX = SIM.DX }) {
     }
     return o;
   };
-  // 다리 장애물 (P7): 다리가 잠긴 셀은 물이 통과하지 못한다
+  // 다리 장애물 (P7): 다리가 잠긴 셀은 물이 통과하지 못한다. 반지름은 다리 굵기 + 셀 1/4 (셀 0~1개)
+  // 더 크게 잡으면 다리 주변에 물이 멈춘 구멍이 보인다
   const obstacle = (x, z) => {
     let o = float(0);
     for (let k = 0; k < 2; k++) {
       const s = cur[k];
-      o = max(o, select(length(vec2(x, z).sub(s.xy)).lessThan(s.z.add(DX * 0.6)).and(s.w.greaterThan(0.05)), float(1), float(0)));
+      o = max(o, select(length(vec2(x, z).sub(s.xy)).lessThan(s.z.add(DX * 0.25)).and(s.w.greaterThan(0.05)), float(1), float(0)));
     }
     return o.greaterThan(0.5);
   };
@@ -210,7 +211,8 @@ export function createSim({ posBuf, mesh, N = SIM.N, DX = SIM.DX }) {
     const c = cellOf();
     const dOcc = occ(cur, c.x, c.z).sub(occ(prev, c.x, c.z));
     const h = st.element(c.t);
-    If(h.greaterThan(SIM.DRY), () => { h.assign(max(h.add(dOcc.mul(SIM.GAIN)), 0)); });
+    // 다리 칸(장애물)에 넣으면 유량이 막혀 갇힌다. 그 바깥 고리에만 넣는다
+    If(h.greaterThan(SIM.DRY).and(obstacle(c.x, c.z).not()), () => { h.assign(max(h.add(dOcc.mul(SIM.GAIN)), 0)); });
   })().compute(NN);
   // δ = 시뮬 수면 − 베이크 수면. 마른 셀은 베이크가 모래 위로 나오면 모래 아래로 눌러 둔다
   const delta = i => {
@@ -241,7 +243,7 @@ export function createSim({ posBuf, mesh, N = SIM.N, DX = SIM.DX }) {
   };
 
   const sim = {
-    N, DX, tex, model: 'linear', acc: 0, steps: 0, cells: NN,
+    N, DX, tex, model: 'swe', acc: 0, steps: 0, cells: NN,
     bufs: { st, fl, tag },                 // 디버그 읽기용
     sample, weight,
     // 창 위치 + 몸 소스 갱신 (프레임마다). sources: [{ x, z, r, sub }] × 3

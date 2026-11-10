@@ -18,6 +18,7 @@
 //     V = 캐릭터 ↔ 관찰 카메라 전환
 // P6: 플레이어 주변 로컬 시뮬(ocean-wave-sim.js). 수면 정점 버퍼는 베이크만 담고, 시뮬은 렌더(정점 높이 + 프래그먼트 노멀)와
 //     탐침에서 같은 합성 함수로 더한다. N = 시뮬 합성 켜기/끄기
+// P7: 얕은 물 방정식(SWE) 모델 추가, 기본값. 베이크 수면을 깊은 쪽 셀의 목표로 넘겨받아 물이 모래 위로 올라왔다 빠진다. M = 모델 전환
 //
 // 주의: 이 월드는 three/webgpu 빌드만 쓴다. 'three'(WebGL 빌드)와 섞지 않는다.
 import * as THREE from 'three/webgpu';
@@ -539,6 +540,7 @@ export default {
       else if (e.key === '3') timeScale = 2;
       else if (e.code === 'KeyV') setMode(mode === 'char' ? 'orbit' : 'char');
       else if (e.code === 'KeyN') water.simOn.value = water.simOn.value > 0.5 ? 0 : 1;
+      else if (e.code === 'KeyM') water.sim.setModel(water.sim.model === 'swe' ? 'linear' : 'swe');
       else if (mode !== 'orbit') return;
       else if (e.code === 'KeyF') follow = !follow;
       else if (e.code === 'KeyC') { view = (view + 1) % VIEWS.length; orbit.setView(...VIEWS[view]); }
@@ -594,7 +596,9 @@ export default {
             if (disposed) return;
             const a = new Float32Array(buf);
             // 3 × 3, 행 = z(-1, 0, +1), 열 = x(-1, 0, +1), 간격 1 m → 중앙 차분
-            wl = { h: a[4], gx: (a[5] - a[3]) / 2, gz: (a[7] - a[1]) / 2, bake: a[9] };
+            // 높이는 바깥 8점 평균 (가운데 칸은 다리 장애물이라 물이 멈춰 있을 수 있다. 기울기가 고르면 가운데 값과 같다)
+            const ring = (a[0] + a[1] + a[2] + a[3] + a[5] + a[6] + a[7] + a[8]) / 8;
+            wl = { h: ring, gx: (a[5] - a[3]) / 2, gz: (a[7] - a[1]) / 2, bake: a[9] };
           }).catch(() => { probePending = false; });
         }
 
@@ -624,7 +628,7 @@ export default {
               + (player.push > 0.05 ? ` · 밀림 ${player.push.toFixed(1)} m/s` : '')
               + (player.blocked ? ` · 막힘(${{ deep: '깊음', slope: '경사', bounds: '경계' }[player.blocked]})` : ''),
             `          WASD 이동 · Shift 달리기 · 휠 거리`,
-            `시뮬      ${water.simOn.value > 0.5 ? water.sim.model : '끔'} · ${water.sim.N}² 셀 × ${water.sim.DX} m (창 ${water.sim.N * water.sim.DX} m) · 서브스텝 ${water.sim.steps} (dt ${(SIM.STEP * 1000).toFixed(1)} ms)   N 켜기/끄기`,
+            `시뮬      ${water.simOn.value > 0.5 ? water.sim.model : '끔'} · ${water.sim.N}² 셀 × ${water.sim.DX} m (창 ${water.sim.N * water.sim.DX} m) · 서브스텝 ${water.sim.steps} (dt ${(SIM.STEP * 1000).toFixed(1)} ms)   N 켜기/끄기 · M 모델`,
           ].join('\n');
         }
       },
