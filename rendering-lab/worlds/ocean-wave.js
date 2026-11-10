@@ -14,6 +14,8 @@
 //     - 쿼드는 이제 평행사변형이 아니라 일반 사각형(이웃 쿼드와 모서리 공유). compute C는 쌍선형 역변환으로 (a, u)를 구한다
 // P4: 셰이딩은 ocean-wave-shading.js에서 직접 계산한다 (하늘 반사 + Fresnel + 물속 산란 + 투과광 + 거품).
 //     거품은 프레임 사이에 남는다: compute C가 이전 거품을 조금씩 줄여 가며 새 거품과 max를 취한다
+// P5: 3인칭 캐릭터(ocean-wave-player.js). 지형은 해석적 함수로, 수면은 GPU 탐침(3 × 3 정점)을 비동기로 읽어 판정한다.
+//     V = 캐릭터 ↔ 관찰 카메라 전환
 //
 // 주의: 이 월드는 three/webgpu 빌드만 쓴다. 'three'(WebGL 빌드)와 섞지 않는다.
 import * as THREE from 'three/webgpu';
@@ -27,6 +29,7 @@ import {
   shoreZ, terrainHeight, smoothstepJS, bakeWaveLUT, sampleLUT, bakeVariation,
 } from './ocean-wave-coast.js';
 import { SUN, HORIZON_HEX, skyColor, rippleNormal, shadeWater } from './ocean-wave-shading.js';
+import { createPlayer, createThirdPerson } from './ocean-wave-player.js';
 
 // ── 월드 좌표 규칙 ──
 // 단위 m, 수면 y = 0. 해안선은 x축을 따라 놓이고 바다는 -z 쪽, 육지는 +z 쪽.
@@ -330,8 +333,30 @@ function buildWater(section) {
     return best;
   }
 
+  // ── 수면 높이 탐침 (P5): 캐릭터 주변 3 × 3 정점 높이를 작은 버퍼에 모아 CPU가 비동기로 읽는다 ──
+  // 정점 버퍼 전체(수 MB)가 아니라 9개만 복사해서 읽는다. 1~2프레임 늦은 값이지만 걷는 속도와 밀림에는 충분하다
+  // 간격 1 m: x는 0.5 m × 2칸, z는 촘촘한 구간 0.125 m × 8칸
+  const PX = 2, PZ = 8;
+  const probeCenter = uniform(new THREE.Vector2(0, 0));    // 가운데 정점의 (ix, iz)
+  const probeBuf = instancedArray(9, 'float');
+  const computeProbe = Fn(() => {
+    const t = int(instanceIndex);
+    const ox = t.mod(3).sub(1).mul(PX), oz = t.div(3).sub(1).mul(PZ);
+    const idx = int(probeCenter.y).add(oz).mul(GX).add(int(probeCenter.x).add(ox));
+    probeBuf.element(t).assign(posBuf.element(idx).y);
+  })().compute(9);
+  // (x, z)에 탐침을 놓는다. 촘촘한 구간 밖이면 false (그때는 잔잔한 수면 0을 쓴다)
+  function probeAt(x, z) {
+    const ix = Math.round((x - WATER.x0) / WATER.dx);
+    const iz = NC + Math.round((z - WATER.zFine) / WATER.dzFine);
+    if (ix < PX || ix > GX - 1 - PX || iz < NC + PZ || iz > L.GZ - 1 - PZ) return false;
+    probeCenter.value.set(ix, iz);
+    return true;
+  }
+
   return {
     mesh, computeQuads, computeSurface, waves, uploadWaves, focus, layout: L, posBuf, lutInfo, foamDecay,
+    computeProbe, probeBuf, probeAt,
     S, K, KS,
     triCount: (L.GX - 1) * (L.GZ - 1) * 2,
     dispose() { deformTex.dispose(); derivTex.dispose(); },
@@ -362,6 +387,7 @@ function buildFarSea() {
 function createOrbit(camera, dom, target) {
   const sph = new THREE.Spherical().setFromVector3(camera.position.clone().sub(target));
   let dragging = false, lx = 0, ly = 0;
+  const ctl = { enabled: true };
   const apply = () => {
     sph.phi = Math.min(Math.max(sph.phi, 0.15), Math.PI / 2 - 0.02);
     sph.radius = Math.min(Math.max(sph.radius, 4), 250);
@@ -371,21 +397,22 @@ function createOrbit(camera, dom, target) {
     p.y = Math.max(p.y, terrainHeight(p.x, p.z) + 1.5, 0.5);
     camera.lookAt(target);
   };
-  const down = e => { dragging = true; lx = e.clientX; ly = e.clientY; dom.setPointerCapture(e.pointerId); };
+  const down = e => { if (!ctl.enabled) return; dragging = true; lx = e.clientX; ly = e.clientY; dom.setPointerCapture(e.pointerId); };
   const move = e => {
-    if (!dragging) return;
+    if (!dragging || !ctl.enabled) return;
     sph.theta -= (e.clientX - lx) * 0.005;
     sph.phi   -= (e.clientY - ly) * 0.005;
     lx = e.clientX; ly = e.clientY; apply();
   };
   const up = () => { dragging = false; };
-  const wheel = e => { e.preventDefault(); sph.radius *= Math.exp(e.deltaY * 0.001); apply(); };
+  const wheel = e => { if (!ctl.enabled) return; e.preventDefault(); sph.radius *= Math.exp(e.deltaY * 0.001); apply(); };
   dom.addEventListener('pointerdown', down);
   dom.addEventListener('pointermove', move);
   dom.addEventListener('pointerup', up);
   dom.addEventListener('wheel', wheel, { passive: false });
   apply();
-  return {
+  return Object.assign(ctl, {
+    refresh: apply,
     // 회전 중심을 옮긴다 (각도·거리는 유지). 파도 따라가기에 쓴다
     setTarget(x, y, z) { target.set(x, y, z); apply(); },
     // 시점 프리셋: theta = 수평 방위(0 = +z 쪽에서 봄), phi = 천정각, radius = 거리
@@ -396,7 +423,7 @@ function createOrbit(camera, dom, target) {
       dom.removeEventListener('pointerup', up);
       dom.removeEventListener('wheel', wheel);
     },
-  };
+  });
 }
 
 function createHud(canvas) {
@@ -433,6 +460,23 @@ export default {
     const orbit = createOrbit(camera, canvas, target);
     orbit.setView(-1.25, 1.42, 26);
 
+    // P5: 3인칭 캐릭터. 만 가운데 마른 모래 위에서 바다를 보고 시작한다
+    const player = createPlayer(0, 16);
+    scene.add(player.object);
+    const tps = createThirdPerson(camera, canvas);
+    // V로 전환: 'char' = 캐릭터 + 3인칭 카메라, 'orbit' = 관찰용 궤도 카메라 (P1~P4 시점)
+    let mode = 'char';
+    const setMode = m => {
+      mode = m;
+      tps.enabled = m === 'char';
+      orbit.enabled = m === 'orbit';
+      if (m === 'orbit') { tps.release(); orbit.refresh(); } else tps.snap();
+    };
+    setMode('char');
+    // 캐릭터 발밑 수면 (GPU 탐침에서 비동기로 받아 옴): 높이 h, 기울기 (gx, gz)
+    const water0 = { h: 0, gx: 0, gz: 0 };
+    let wl = water0, probePending = false, probeOn = false, disposed = false;
+
     const backend = renderer.backend && renderer.backend.isWebGPUBackend ? 'WebGPU' : 'WebGL2 (WebGPU 미지원 폴백)';
     const hud = createHud(canvas);
     let hudT = 0, frames = 0, fpsT = 0, fps = 0;
@@ -450,6 +494,8 @@ export default {
       else if (e.key === '1') timeScale = 0.25;
       else if (e.key === '2') timeScale = 1;
       else if (e.key === '3') timeScale = 2;
+      else if (e.code === 'KeyV') setMode(mode === 'char' ? 'orbit' : 'char');
+      else if (mode !== 'orbit') return;
       else if (e.code === 'KeyF') follow = !follow;
       else if (e.code === 'KeyC') { view = (view + 1) % VIEWS.length; orbit.setView(...VIEWS[view]); }
     };
@@ -474,13 +520,37 @@ export default {
       update(dt) {
         dt = Math.min(dt, 0.1);
         const simDt = paused ? 0 : dt * timeScale;
+
+        // 입력 → 캐릭터 이동 (직전에 받아 둔 수면 사용) → 카메라
+        if (!probeOn) wl = water0;
+        if (mode === 'char') {
+          player.update(dt, tps.input(), tps.yaw, wl);
+          tps.update(dt, player.pos, wl.h);
+        } else {
+          player.update(dt, { f: 0, r: 0, run: false }, tps.yaw, wl);   // 관찰 중에도 파도에 밀리긴 한다
+        }
         water.waves.step(simDt);
         water.uploadWaves();
         water.foamDecay.value = Math.exp(-simDt / 3.5);   // 거품 수명 약 3.5초
         renderer.compute(water.computeQuads);      // A: waveLUT → 쿼드
         renderer.compute(water.computeSurface);    // C: 쿼드 → 수면 정점
+
+        // 캐릭터 발밑 수면 탐침: 한 번에 하나만 읽기 요청을 걸어 둔다 (GPU를 기다리지 않음)
+        probeOn = water.probeAt(player.pos.x, player.pos.z);
+        if (probeOn && !probePending) {
+          renderer.compute(water.computeProbe);
+          probePending = true;
+          renderer.getArrayBufferAsync(water.probeBuf.value).then(buf => {
+            probePending = false;
+            if (disposed) return;
+            const a = new Float32Array(buf);
+            // 3 × 3, 행 = z(-1, 0, +1), 열 = x(-1, 0, +1), 간격 1 m → 중앙 차분
+            wl = { h: a[4], gx: (a[5] - a[3]) / 2, gz: (a[7] - a[1]) / 2 };
+          }).catch(() => { probePending = false; });
+        }
+
         foc = water.focus();
-        if (follow && foc) {
+        if (mode === 'orbit' && follow && foc) {
           // 따라가던 파도가 다 무너지면 다음 파도로 넘어가는데, 그때 카메라가 튀지 않게 부드럽게 옮긴다
           camT.lerp(new THREE.Vector3(foc.x, 1.5, foc.z), 1 - Math.exp(-dt * 3));
           orbit.setTarget(camT.x, camT.y, camT.z);
@@ -496,13 +566,23 @@ export default {
             `수면      정점 ${water.layout.COUNT.toLocaleString()} · 삼각형 ${water.triCount.toLocaleString()}`,
             `파면      ${alive}/${water.K}개 · 쿼드 ${water.KS} (${water.K} × ${water.S}) · 정점당 검사 ${water.KS} (전체 순회)`,
             `따라가는 파도  t ${foc ? foc.t.toFixed(1) : '-'} / ${water.lutInfo.T.toFixed(1)} s   crest z ${foc ? foc.z.toFixed(1) : '-'} m   V 가운데 ${foc ? foc.v.toFixed(2) : '-'}`,
-            `시간      ${paused ? '일시정지' : timeScale + 'x'}   (Space 정지 · 1/2/3 = 0.25x/1x/2x)
-카메라    ${follow ? '파도 따라가기' : '자유'}   (F 따라가기 · C 시점 · 드래그 회전 · 휠 줌)`,
+            `시간      ${paused ? '일시정지' : timeScale + 'x'}   (Space 정지 · 1/2/3 = 0.25x/1x/2x)`,
+            mode === 'char'
+              ? `카메라    3인칭 ${tps.locked() ? '(마우스 잠김 · Esc 해제)' : tps.focused() ? '(드래그 회전)' : '(화면 클릭하면 조작 시작)'}   V 관찰 모드`
+              : `카메라    관찰 · ${follow ? '파도 따라가기' : '자유'}   (F 따라가기 · C 시점 · 드래그 회전 · 휠 줌 · V 캐릭터)`,
+            `캐릭터    (${player.pos.x.toFixed(1)}, ${player.pos.z.toFixed(1)})  지면 ${player.pos.y.toFixed(2)} m · 수면 ${probeOn ? wl.h.toFixed(2) : '0.00'} m`
+              + ` · 수심 ${player.depth.toFixed(2)} m · 속도 ×${player.wade.toFixed(2)} · ${player.vel.length().toFixed(1)} m/s`
+              + (player.push > 0.05 ? ` · 밀림 ${player.push.toFixed(1)} m/s` : '')
+              + (player.blocked ? ` · 막힘(${{ deep: '깊음', slope: '경사', bounds: '경계' }[player.blocked]})` : ''),
+            `          WASD 이동 · Shift 달리기 · 휠 거리`,
           ].join('\n');
         }
       },
       dispose() {
+        disposed = true;
         orbit.dispose();
+        tps.dispose();
+        player.dispose();
         window.removeEventListener('keydown', onKey);
         window.removeEventListener('keydown', onDebugKey);
         document.getElementById('ocean-debug')?.remove();
