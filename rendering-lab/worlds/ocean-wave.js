@@ -36,6 +36,8 @@ import {
 import { SUN, HORIZON_HEX, skyColor, rippleNormal, shadeWater } from './ocean-wave-shading.js';
 import { createPlayer, createThirdPerson } from './ocean-wave-player.js';
 import { createSim, SIM } from './ocean-wave-sim.js';
+import { foamDetail, bumpNormal, FOAM_DEBUG } from './ocean-wave-foam.js';
+import { createSpray } from './ocean-wave-spray.js';
 
 // ── 월드 좌표 규칙 ──
 // 단위 m, 수면 y = 0. 해안선은 x축을 따라 놓이고 바다는 -z 쪽, 육지는 +z 쪽.
@@ -172,7 +174,12 @@ function buildWater(section) {
 
   const posBuf = instancedArray(COUNT, 'vec3');     // 정점 위치
   const nrmBuf = instancedArray(COUNT, 'vec3');     // 정점 노멀
-  const foamBuf = instancedArray(COUNT, 'float');   // 거품량
+  // 거품 (Q1): (잔여 = 지나간 거품이 감쇠하며 남은 양, lip, bore, 지난 거품만). lip·bore는 이번 프레임 값
+  const foamBuf = instancedArray(COUNT, 'vec4');
+  // 거품 무늬 좌표: 이 정점을 덮은 파면의 (s 파면 방향 m, u 가로지르는 방향 m, V, 강도).
+  // 파도와 같이 움직이는 무늬 + 프래그먼트에서 lip·bore 거품 띠를 직접 다시 계산하는 데 쓴다
+  // (띠가 좁아서 정점 값을 보간하면 x 0.5 m 간격 삼각형마다 톱니가 생긴다)
+  const foamUV = instancedArray(COUNT, 'vec4');
 
   // waveLUT: 행 = 시간, 열 = 파면 위 위치 s. 값 = (x, z, V, 등장 페이드). init 때 한 번 올린다
   const lutInfo = bakeWaveLUT();
@@ -242,6 +249,16 @@ function buildWater(section) {
   // bore 단면 모양 (u 단위): 앞 가장자리 UB, 뒤 오르막 길이 B_BACK, 앞 낙차 반폭 B_RISE
   const BORE_H = FRONT.BORE_H, UB = CREST_U + 0.04, B_BACK = 0.35, B_RISE = 0.04;
   const foamDecay = uniform(1);          // 프레임마다 exp(-dt / 거품 수명)
+  const texUV = (u, v) => vec2(u.mul((NU - 1) / NU).add(0.5 / NU), min(v, 1).mul((NV - 1) / NV).add(0.5 / NV));
+  // bore 앞쪽 거품 띠 (compute C와 프래그먼트가 같이 쓴다)
+  const boreFoamAt = (u, v, str) => {
+    const bw = select(v.greaterThan(1), float(1), smoothstep(0.7, 1.0, v));
+    const tf = clamp(u.sub(UB - B_RISE).div(2 * B_RISE), 0, 1);
+    const sf = float(1).sub(tf.mul(tf).mul(tf.mul(-2).add(3)));
+    return bw.mul(str).mul(sf).mul(smoothstep(UB - 0.25, UB - 0.03, u));
+  };
+  // lip·흰 물 거품 띠: 단면 텍스처의 거품 채널
+  const lipFoamAt = (u, v, str) => texture(deformTex, texUV(u, v)).level(0).z.mul(str);
 
   // ── 타일 비닝 (E2, compute B): 수면 격자를 TILE m 칸으로 나누고, 쿼드마다 자기 AABB가 겹치는 타일 목록에 번호를 넣는다 ──
   const TILE = 8, TCAP = 64;
@@ -288,7 +305,8 @@ function buildWater(section) {
 
       const disp = vec3(0).toVar();
       const nAcc = vec3(0).toVar();          // 쿼드별 노멀의 "평평함에서 벗어난 양"을 더한다
-      const foam = float(0).toVar();
+      const lipF = float(0).toVar(), boreF = float(0).toVar();
+      const fBest = float(-1).toVar(), fuv = vec4(0).toVar();
       // 한 파면 안에서는 쿼드 하나만 쓴다. 이웃 쿼드가 공유하는 모서리 위 정점은 부동소수 오차로
       // 양쪽 모두에 들어갈 수 있는데, 그러면 변위가 두 번 더해져 가시처럼 튄다
       const hitWave = int(-1).toVar();
@@ -347,7 +365,7 @@ function buildWater(section) {
             const tf = clamp(u.sub(UB - B_RISE).div(2 * B_RISE), 0, 1);       // 앞쪽 낙차
             const sb = tb.mul(tb).mul(tb.mul(-2).add(3)), sf = float(1).sub(tf.mul(tf).mul(tf.mul(-2).add(3)));
             const bH = bAmp.mul(sb.mul(sf));
-            const bFoam = bw.mul(str).mul(sf).mul(smoothstep(UB - 0.25, UB - 0.03, u));
+            const bFoam = boreFoamAt(u, v, str);
 
             disp.addAssign(nh.mul(def.x).add(vec3(0, def.y, 0)).mul(str).add(vec3(0, bH, 0)));
             if (!diff) {
@@ -358,7 +376,14 @@ function buildWater(section) {
               const tu = nh.mul(Wl.add(der.x.mul(str))).add(vec3(0, der.y.mul(str).add(bD), 0));
               nAcc.addAssign(normalize(cross(tu, th)).sub(UP));  // (해안 쪽) × (+s 쪽) = 위
             }
-            foam.assign(max(foam, max(def.z.mul(str), bFoam)));
+            const lf = def.z.mul(str);
+            // 거품이 가장 많은 파면의 좌표를 무늬 좌표로. s = (열 + a) × 대략 열 간격, 파면마다 어긋나게
+            If(lf.add(bFoam).greaterThan(fBest), () => {
+              fBest.assign(lf.add(bFoam));
+              fuv.assign(vec4(float(q.mod(int(S))).add(a).mul(5.2).add(float(wq).mul(61.7)), u.mul(W), v, str));
+            });
+            lipF.assign(max(lipF, lf));
+            boreF.assign(max(boreF, bFoam));
             hitWave.assign(wq);
           });
         });
@@ -382,7 +407,10 @@ function buildWater(section) {
       posBuf.element(i).assign(vec3(x, 0, z).add(disp));
       if (!diff) nrmBuf.element(i).assign(normalize(UP.add(nAcc)));
       // 거품 잔상: 파도가 지나간 자리에 거품이 몇 초 남았다가 사라진다 (격자점이 xz에 고정이라 그 자리에 남는다)
-      foamBuf.element(i).assign(max(foam, foamBuf.element(i).mul(foamDecay)));
+      // w = 지난 거품이 한 프레임 감쇠한 값 (이번 프레임 lip·bore 띠는 빼서, 프래그먼트 잔여 거품에 톱니가 안 생기게)
+      const old = foamBuf.element(i).x.mul(foamDecay);
+      foamBuf.element(i).assign(vec4(max(max(lipF, boreF), old), lipF, boreF, old));
+      foamUV.element(i).assign(fuv);
     })().compute(COUNT);
   }
   function surface(cfg) {
@@ -414,6 +442,7 @@ function buildWater(section) {
   };
 
   // 조명은 shadeWater가 직접 계산하므로 라이트를 쓰지 않는 Basic 재질에 색만 꽂는다
+  let foamDetailOn = true;    // Q1 거품 디테일 (패널에서 끄고 켜서 비교)
   function makeMaterial(s) {
     const composite = makeComposite(s);
     const mat = new THREE.MeshBasicNodeMaterial({ transparent: true, side: THREE.DoubleSide });
@@ -425,6 +454,7 @@ function buildWater(section) {
     const gS = s.sample(positionWorld.xz).yz.mul(vW);
     const nW = normalize(normalize(varying(nrmBuf.element(vertexIndex))).sub(vec3(gS.x, 0, gS.y)));
     const vFoam = varying(foamBuf.element(vertexIndex));
+    const vFoamUV = varying(foamUV.element(vertexIndex));
     const vHeight = varying(cmp.y);
     const bed = attribute('aBed', 'float');
 
@@ -434,7 +464,18 @@ function buildWater(section) {
     const thickness = max(positionWorld.y.sub(bed), 0);
     // 물가 거품: 물이 얇아지는 해안선 근처에 늘 조금 있다
     const shoreFoam = float(1).sub(smoothstep(0.05, 0.6, thickness)).mul(0.7);
-    const shade = shadeWater(N, positionWorld, thickness, max(vFoam, shoreFoam), lift);
+    let shade;
+    if (foamDetailOn) {
+      // Q1: 세 종류 거품을 프래그먼트에서 레이스·줄무늬·끓는 셀로. 범프 노멀은 거품 셀 높이의 화면 미분
+      // lip·bore 밀도는 프래그먼트에서 파면 좌표로 다시 계산한다 (정점 보간 톱니 제거). 파면 밖(강도 0)은 0
+      const uq = vFoamUV.y.div(W);
+      const fpx = vec4(vFoam.w, lipFoamAt(uq, vFoamUV.z, vFoamUV.w), boreFoamAt(uq, vFoamUV.z, vFoamUV.w), 0);
+      const fd = foamDetail(positionWorld, vFoamUV.xy, fpx, shoreFoam);
+      const normal = bumpNormal(N, positionWorld, fd.cover.mul(fd.b), 0.06);
+      shade = shadeWater(N, positionWorld, thickness, vFoam.x, lift, { ...fd, normal });
+    } else {
+      shade = shadeWater(N, positionWorld, thickness, max(max(vFoam.x, vFoam.y), max(vFoam.z, shoreFoam)), lift);
+    }
     mat.colorNode = shade.col;
     mat.opacityNode = shade.alpha;
     return mat;
@@ -465,7 +506,7 @@ function buildWater(section) {
   // ── 수면 높이 탐침 (P5): 캐릭터 주변 3 × 3 정점 높이를 작은 버퍼에 모아 CPU가 비동기로 읽는다 ──
   // 정점 버퍼 전체(수 MB)가 아니라 9개만 복사해서 읽는다. 1~2프레임 늦은 값이지만 걷는 속도와 밀림에는 충분하다
   // 간격 1 m: x는 0.5 m × 2칸, z는 촘촘한 구간 0.125 m × 8칸
-  const PX = 2, PZ = 8;
+  const PX = Math.round(1 / WATER.dx), PZ = Math.round(1 / WATER.dzFine);   // 1 m 간격
   const probeCenter = uniform(new THREE.Vector2(0, 0));    // 가운데 정점의 (ix, iz)
   const probeBuf = instancedArray(10, 'float');   // 0~8: 합성 수면 3 × 3, 9: 가운데 베이크만
   function makeProbe(s) {
@@ -507,15 +548,23 @@ function buildWater(section) {
   }
   setSim({ N: SIM.N, DX: SIM.DX });
 
+  // Q1-5: lip·bore 물보라 입자 (compute A가 만든 쿼드에서 태어난다)
+  const spray = createSpray({ quadBuf, KS, deformTex, NU, NV, W, CREST_U, UB });
+
   return {
     mesh, computeQuads, waves, uploadWaves, focus, layout: L, posBuf, lutInfo, foamDecay,
     clearTiles, binQuads, surface, computeNormalsDiff, tileCnt, tileList, quadBuf, vertsPerTile, NTILE, TILE, TX, TZ,
-    probeBuf, probeAt, simOn, setSim,
+    probeBuf, probeAt, simOn, setSim, spray,
     get sim() { return sim; },
+    get foamDetail() { return foamDetailOn; },
+    setFoamDetail(on) {
+      foamDetailOn = on;
+      const old = mesh.material; mesh.material = makeMaterial(sim); old.dispose();
+    },
     get computeProbe() { return computeProbe; },
     S, K, KS,
     triCount: (L.GX - 1) * (L.GZ - 1) * 2,
-    dispose() { deformTex.dispose(); derivTex.dispose(); sim.dispose(); },
+    dispose() { deformTex.dispose(); derivTex.dispose(); sim.dispose(); spray.dispose(); },
   };
 }
 
@@ -689,7 +738,7 @@ export default {
     const terrain = buildTerrain();
     const water = buildWater(section);
     const farSea = buildFarSea();
-    scene.add(terrain, water.mesh, farSea);
+    scene.add(terrain, water.mesh, farSea, water.spray.mesh);
 
     const orbit = createOrbit(camera, canvas, target);
     orbit.setView(-1.25, 1.42, 26);
@@ -726,6 +775,8 @@ export default {
       else if (id === 'E8') { cfg.preset = (cfg.preset + 1) % SIM_PRESETS.length; water.setSim(SIM_PRESETS[cfg.preset]); }
       else if (id === 'E9') sim.dtMode = sim.dtMode === 'fixed' ? 'variable' : 'fixed';
       else if (id === 'E11') { sim.skipCalm = !sim.skipCalm; sim.energy = 1e9; }
+      else if (id === 'Q1') water.setFoamDetail(!water.foamDetail);
+      else if (id === 'Q2') water.spray.on = !water.spray.on;
       prof.ema = {};     // 설정이 바뀌면 평균을 새로 잰다
       tileAvg = null;
       refreshExps();
@@ -744,6 +795,8 @@ export default {
         ['E9', '서브스텝', sim.dtMode === 'fixed' ? '고정 dt 누적기' : '가변 dt', sim.dtMode !== 'fixed'],
         ['E10', '공유 메모리 타일', '미구현', null],
         ['E11', '잔잔하면 건너뜀', sim.skipCalm ? '켬 (선형만)' : '끔', sim.skipCalm],
+        ['Q1', '거품 디테일', water.foamDetail ? '켬' : '끔 (P4 방식)', !water.foamDetail],
+        ['Q2', '물보라 입자', water.spray.on ? `켬 (${water.spray.N.toLocaleString()}개)` : '끔', !water.spray.on],
       ]);
     }
     refreshExps();
@@ -785,7 +838,7 @@ export default {
     };
     window.addEventListener('keydown', onDebugKey);
     // ?debug: 콘솔·자동 검증용 핸들 (시뮬 버퍼 읽기 등)
-    if (debug) window.__ocean = { renderer, water, player, tps, get wl() { return wl; }, setMode, cfg, prof, refreshExps };
+    if (debug) window.__ocean = { renderer, water, player, tps, get wl() { return wl; }, setMode, cfg, prof, refreshExps, FOAM_DEBUG };
 
     return {
       scene, camera,
@@ -806,6 +859,8 @@ export default {
         water.uploadWaves();
         water.foamDecay.value = Math.exp(-simDt / 3.5);   // 거품 수명 약 3.5초
         prof.run(water.computeQuads, 'A');                // A: waveLUT → 쿼드
+        water.spray.update(simDt);
+        prof.run(water.spray.step, 'F');                  // F: 물보라 입자 (Q1-5)
         if (cfg.bin) { prof.run(water.clearTiles, 'B'); prof.run(water.binQuads, 'B'); }   // B: 타일 비닝 (E2)
         prof.run(water.surface(cfg), 'C');                // C: 쿼드 → 수면 정점
         if (cfg.diff) prof.run(water.computeNormalsDiff, 'C');   // E4: 이웃 차분 노멀도 C에 넣어 잰다
@@ -873,11 +928,12 @@ export default {
           ].join('\n');
           const e = prof.ema, ms = k => (e[k] || 0).toFixed(3).padStart(6);
           const sim = water.sim;
-          const tot = ['A', 'B', 'C', 'S', 'P'].reduce((a, k) => a + (e[k] || 0), 0);
+          const tot = ['A', 'B', 'C', 'S', 'P', 'F'].reduce((a, k) => a + (e[k] || 0), 0);
           panel.times.textContent = (prof.on ? [
             `GPU ms    A ${ms('A')}   B ${ms('B')}`,
             `          C ${ms('C')}   S ${ms('S')}`,
-            `          탐침 ${ms('P')}   렌더 ${prof.render.toFixed(3).padStart(6)}`,
+            `          탐침 ${ms('P')}   물보라 ${ms('F')}`,
+            `          렌더 ${prof.render.toFixed(3).padStart(6)}`,
             `          컴퓨트 합 ${tot.toFixed(3)} · 전체 ${(tot + prof.render).toFixed(3)}`,
           ] : ['GPU 타임스탬프 없음 (timestamp-query 미지원)']).concat([
             `FPS       ${fps.toFixed(0)}`,

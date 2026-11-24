@@ -64,8 +64,9 @@ export function rippleNormal(N, P, strength = float(1)) {
 // ── 물 셰이딩 ──
 // N: 월드 노멀 (뒷면이면 이미 뒤집혀 있어야 함), P: 월드 위치
 // thickness: 이 점에서 바닥까지 물 두께 (m), foam: 0~1, lift: 솟아오른 정도 0~1
+// fx (Q1, 선택): 거품 디테일 { cover, b, density, near } (ocean-wave-foam.js). 없으면 예전처럼 프랙탈 노이즈로 덮는다
 // 반환: { col: 색 노드, alpha: 불투명도 노드 } (노드 그래프를 만드는 보통 JS 함수)
-export function shadeWater(N, P, thickness, foam, lift) {
+export function shadeWater(N, P, thickness, foam, lift, fx = null) {
   const V = normalize(cameraPosition.sub(P));
   const NdV = saturate(dot(N, V));
 
@@ -95,11 +96,29 @@ export function shadeWater(N, P, thickness, foam, lift) {
 
   const water = mix(body.add(sssCol.mul(sss)).add(liftGlow), refl, F).add(SUN_COL.mul(spec).mul(F.mul(4).add(0.4)));
 
-  // 거품: 노이즈로 얼룩지게 덮는다. 거품량이 많을수록 노이즈 문턱이 내려가 빈틈이 줄어든다
-  const nz = mx_fractal_noise_float(vec3(P.x.mul(0.45), P.z.mul(0.45), time.mul(0.12)), 3).mul(0.5).add(0.5);
-  const cover = saturate(foam.mul(1.5).sub(float(1).sub(nz)).mul(3.0));
-  const foamLit = vec3(0.9, 0.93, 0.95).mul(float(0.55).add(float(0.45).mul(saturate(dot(N, L)))))
-    .add(refl.mul(0.12));
+  let cover, foamLit;
+  if (!fx) {
+    // 거품: 노이즈로 얼룩지게 덮는다. 거품량이 많을수록 노이즈 문턱이 내려가 빈틈이 줄어든다
+    const nz = mx_fractal_noise_float(vec3(P.x.mul(0.45), P.z.mul(0.45), time.mul(0.12)), 3).mul(0.5).add(0.5);
+    cover = saturate(foam.mul(1.5).sub(float(1).sub(nz)).mul(3.0));
+    foamLit = vec3(0.9, 0.93, 0.95).mul(float(0.55).add(float(0.45).mul(saturate(dot(N, L))))).add(refl.mul(0.12));
+  } else {
+    // Q1 거품 셰이딩
+    //   범프: 셀 가운데가 볼록한 거품 덩어리 → 화면 미분으로 노멀을 기울인다 (fx.normal)
+    //   AO: 셀 경계(틈)는 빛이 덜 들어 어둡다
+    //   두께: 밀도가 낮은 얇은 거품은 아래 물색이 비친다
+    //   반짝임: 볼록한 면이 태양을 정확히 향하는 곳에 작은 하이라이트
+    const Nf = fx.normal;
+    const wrap = saturate(dot(Nf, L).mul(0.6).add(0.4));
+    const ao = mix(float(0.62), float(1), smoothstep(0.0, 0.55, fx.b));
+    // 거품은 빛을 사방으로 흩뜨려서 그늘진 면도 꽤 밝다 (최소 0.55)
+    const base = vec3(0.92, 0.95, 0.97).mul(wrap.mul(0.45).add(0.55)).mul(ao).add(refl.mul(0.1));
+    const Hf = normalize(L.add(V));
+    const glint = pow(saturate(dot(Nf, Hf)), 220).mul(1.6).mul(fx.near);
+    foamLit = base.add(SUN_COL.mul(glint));
+    // 얇은 거품은 물이 비친다: 덮임 × (0.55 ~ 1)
+    cover = fx.cover.mul(mix(float(0.55), float(1), smoothstep(0.1, 0.7, fx.density)));
+  }
   const col = mix(water, foamLit, cover);
 
   // 불투명도: 물이 얇으면 바닥(모래)이 비친다. 반사가 강하거나 거품이 있으면 불투명
